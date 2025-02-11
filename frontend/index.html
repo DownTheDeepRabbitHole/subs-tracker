@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sub Tracker</title>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || []
+      OneSignalDeferred.push(async function (OneSignal) {
+        await OneSignal.init({
+          appId: 'dc6f6c0b-b679-4c19-9db3-021e0cf7a297',
+        })
+      })
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
