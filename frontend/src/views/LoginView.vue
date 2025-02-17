@@ -21,25 +21,55 @@ const onSubmit = async () => {
       username: username.value,
       password: password.value,
     })
-    
 
     // If login is successful, handle the JWT tokens
-    const { access, refresh, user_id } = response.data
+    const { access, refresh } = response.data
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
 
-    // Request notification permissions
-    if (window.OneSignal) {
-      window.OneSignal.push(function () {
-        OneSignal.Notifications.requestPermission()
+    OneSignalDeferred.push(async function (OneSignal) {
+      logInUser()
+      // OneSignal.User.addEventListener('change', function (event) {
+      //   console.log('change', { event })
+      //   logInUser()
+      // })
+
+      // Request notification permissions
+      OneSignal.Notifications.requestPermission()
+    })
+
+    OneSignalDeferred.push(async function (OneSignal) {
+      const id = await getUserId()
+
+      console.log(id)
+      console.log(OneSignal.User.onesignalId)
+
+      await OneSignal.login(id).catch((error) => {
+        console.error('OneSignal login error: ', error)
       })
-    }
+    })
 
     router.push('/')
   } catch (error) {
     errorMessage.value = 'Invalid username or password'
     console.log(error)
   }
+}
+
+const getUserId = async () => {
+  const response = await axios.get('/api/get-user-id')
+  return response.data['user_id'].toString()
+}
+
+const logInUser = async () => {
+  const id = await getUserId()
+
+  console.log(id)
+  console.log(OneSignal.User.onesignalId)
+
+  await OneSignal.login(id).catch((error) => {
+    console.error('OneSignal login error: ', error)
+  })
 }
 </script>
 

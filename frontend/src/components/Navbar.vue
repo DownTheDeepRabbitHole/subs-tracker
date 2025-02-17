@@ -13,7 +13,11 @@ const logout = () => {
   // Remove the access token from localStorage
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
-  localStorage.removeItem('user_id')
+
+  OneSignalDeferred.push(async function (OneSignal) {
+    await OneSignal.logout()
+    console.log("logged out")
+  })
 
   // Redirect the user to the login page
   router.push('/login')
@@ -33,7 +37,7 @@ const logout = () => {
               <RouterLink to="/" class="nav-link" :class="{ active: isActiveLink('/') }"> Home </RouterLink>
               <RouterLink to="/shared-list" class="nav-link" :class="{ active: isActiveLink('/shared-list') }"> Shared List </RouterLink>
               <RouterLink to="/my-list" class="nav-link" :class="{ active: isActiveLink('/my-list') }"> My List </RouterLink>
-              <Button @click="logout" class="text-black bg-white hover:bg-accent-dark hover:text-white" >Logout</Button>
+              <Button @click="logout" class="text-black bg-white hover:bg-accent-dark hover:text-white">Logout</Button>
             </div>
           </div>
         </div>

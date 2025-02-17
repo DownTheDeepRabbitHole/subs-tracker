@@ -5,22 +5,26 @@ import Navbar from './components/Navbar.vue'
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
 
-async function permissionChangeListener(permission) {
-  if (permission) {
-    const id = await getUserId()
+// async function permissionChangeListener(permission) {
+//   if (permission) {
+//     const id = await getUserId()
 
-    OneSignal.login(id.toString())
-  }
-}
+//     console.log(id.toString())
 
-OneSignalDeferred.push(function (OneSignal) {
-  OneSignal.Notifications.addEventListener('permissionChange', permissionChangeListener)
-})
+//     OneSignal.login(id.toString()).catch((error) => {
+//       console.error('OneSignal login error: ', error)
+//     })
+//   }
+// }
 
-const getUserId = async () => {
-  const response = await axios.get('/api/get-user-id')
-  return response.data
-}
+// OneSignalDeferred.push(function (OneSignal) {
+//   OneSignal.Notifications.addEventListener('permissionChange', permissionChangeListener)
+// })
+
+// const getUserId = async () => {
+//   const response = await axios.get('/api/get-user-id')
+//   return response.data['user_id'].toString()
+// }
 </script>
 
 <template>

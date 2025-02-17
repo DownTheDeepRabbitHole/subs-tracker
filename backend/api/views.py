@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, F
 
 from .models import User, Subscription, Plan, UserPlan, Category
 from .serializers import (
@@ -14,7 +14,8 @@ from .serializers import (
     UserPlanSerializer,
     CategorySerializer,
 )
-from . import screentime, notifications
+from . import screentime
+from .utils import budget_plans
 import datetime
 
 
@@ -26,36 +27,53 @@ class UpdateView(APIView):
         users = User.objects.exclude(api_key_encrypted__isnull=True)
 
         for user in users:
-            if (user.username!='tonyl'): continue
+            if user.username != "tonyl":
+                continue
             api_key = user.api_key_encrypted
 
             # Fetch active plans for the user
-            plans = UserPlan.objects.filter(user=user, track_usage=True).select_related("plan__subscription")
-            subscription_names = [plan.plan.subscription.name for plan in plans]
+            user_plans = UserPlan.objects.filter(
+                user=user, track_usage=True
+            ).select_related("plan__subscription")
 
             # Fetch screen time data
             start_date = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
             end_date = datetime.date.today().isoformat()
-            data = screentime.fetch_data(api_key, start_date, end_date)
-
-            # Calculate usage scores
-            usage_scores, df = screentime.calculate_usage(subscription_names, data)
-            screentime.display_subscriptions(subscription_names, df)
+            df = screentime.fetch_data(api_key, start_date, end_date)
 
             # Update usage scores and send notifications for unused subscriptions
-            for plan in plans:
-                subscription_name = plan.plan.subscription.name
-                plan.usage_score = usage_scores.get(subscription_name, 0)
-                plan.save()
+            for user_plan in user_plans:
+                try:
+                    subscription_name = user_plan.plan.subscription.name
+                    user_plan.update_usage_score(subscription_name, df)
+                    user_plan.send_notification_if_unused()
+                except Exception as e:
+                    print(f"Error processing {subscription_name}: {e}")
 
-                if plan.usage_score < 3:
-                    notifications.send_push_notification(
-                        "Unused Subscription",
-                        f"The subscription '{subscription_name}' is unused.",
-                        user.id
-                    )
+            # Display subscriptions after processing all user plans
+            for user_plan in user_plans:
+                subscription_name = user_plan.plan.subscription.name
+                screentime.display_subscriptions(subscription_name, df)
 
-        return Response(usage_scores, status=status.HTTP_200_OK)
+        return Response({}, status=status.HTTP_200_OK)
+
+
+class OptimizeBudget(APIView):
+    def get(self, request):
+        user = request.user
+        budget = request.budget
+
+        user_plans = list(
+            UserPlan.objects.filter(user=user).values(
+                "id", "usage_score", plan_cost=F("plan__cost")
+            )
+        )
+
+        selected_ids = budget_plans(user_plans, budget)
+
+        optimized_subs = Subscription.objects.filter(id__in=selected_ids)
+
+        return Response({"subscriptions": optimized_subs}, status=status.HTTP_200_OK)
 
 
 class GetUserId(APIView):
@@ -154,6 +172,7 @@ class UserPlanView(viewsets.ModelViewSet):
 class SubscriptionView(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+
 
 class CategoryView(viewsets.ModelViewSet):
     queryset = Category.objects.all()

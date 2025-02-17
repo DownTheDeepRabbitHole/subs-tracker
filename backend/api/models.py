@@ -1,6 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from . import screentime, notifications
+
+
 class User(AbstractUser):
     remember_me = models.BooleanField(default=False)
     allow_notifications = models.BooleanField(default=False)
@@ -8,6 +11,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
 
 class Category(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -50,9 +54,7 @@ class Plan(models.Model):
 class UserPlan(models.Model):
     USAGE_SCORE_CHOICES = [(i, i) for i in range(0, 11)]
 
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="user_plans"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_plans")
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
 
     next_payment_date = models.DateField(null=True, blank=True)
@@ -61,7 +63,17 @@ class UserPlan(models.Model):
     usage_score = models.IntegerField(default=0, choices=USAGE_SCORE_CHOICES)
     average_usage = models.IntegerField(default=0)
 
+    def update_usage_score(self, subscription_name, df):
+        self.usage_score = screentime.calculate_usage(subscription_name, df)
+        self.save()
+
+    def send_notification_if_unused(self):
+        if self.usage_score < 3:
+            notifications.send_push_notification(
+                "Unused Subscription",
+                f"The subscription '{self.plan.subscription.name}' is unused.",
+                self.user.id,
+            )
+
     def __str__(self):
-        return (
-            f"{self.user.username}'s {self.plan.subscription.name} - {self.plan.name}"
-        )
+        return f"{self.user.username}'s {self.plan.subscription.name} - {self.plan.name}"
