@@ -1,6 +1,6 @@
 <script setup>
 import Card from '@/components/Card.vue'
-import UserPlanList from '@/components/UserPlanList.vue';
+import UserPlanList from '@/components/UserPlanList.vue'
 </script>
 
 <template>

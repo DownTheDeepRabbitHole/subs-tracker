@@ -37,6 +37,7 @@ const logout = () => {
               <RouterLink to="/" class="nav-link" :class="{ active: isActiveLink('/') }"> Home </RouterLink>
               <RouterLink to="/shared-list" class="nav-link" :class="{ active: isActiveLink('/shared-list') }"> Shared List </RouterLink>
               <RouterLink to="/my-list" class="nav-link" :class="{ active: isActiveLink('/my-list') }"> My List </RouterLink>
+              <RouterLink to="/new-plan" class="nav-link" :class="{ active: isActiveLink('/new-plan') }"> Add Plan </RouterLink>
               <Button @click="logout" class="text-black bg-white hover:bg-accent-dark hover:text-white">Logout</Button>
             </div>
           </div>

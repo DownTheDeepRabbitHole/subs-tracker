@@ -61,5 +61,3 @@ def send_push_notification(title, message, *user_ids):
             print(f"Notification sent successfully: {response_data}")
     except requests.exceptions.RequestException as e:
         print(f"Failed to send notification: {e}")
-
-send_push_notification("SUP","OI",1)

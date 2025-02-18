@@ -17,7 +17,7 @@ from .serializers import (
 from . import screentime
 from .utils import budget_plans
 import datetime
-
+from django.utils.dateparse import parse_date
 
 class UpdateView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -130,12 +130,8 @@ class PlanView(viewsets.ModelViewSet):
             filters &= Q(cost__lte=cost_max)
         if period := params.get("period"):
             filters &= Q(period=period)
-        if name := params.get("name"):
-            filters &= Q(name__icontains=name)
         if category_id := params.get("category_id"):
             filters &= Q(subscription__category__id=category_id)
-        if subscription_name := params.get("subscription_name"):
-            filters &= Q(subscription__name__icontains=subscription_name)
 
         return queryset.filter(filters)
 
@@ -144,11 +140,30 @@ class UserPlanView(viewsets.ModelViewSet):
     serializer_class = UserPlanSerializer
 
     def get_queryset(self):
-        return UserPlan.objects.filter(user=self.request.user)
+        queryset = UserPlan.objects.filter(user=self.request.user)
+        params = self.request.query_params
+
+        # Apply filters based on query parameters
+        filters = Q()
+        if cost_min := params.get("cost_min"):
+            filters &= Q(plan__cost__gte=cost_min)
+        if cost_max := params.get("cost_max"):
+            filters &= Q(plan__cost__lte=cost_max)
+        if period := params.get("period"):
+            filters &= Q(plan__period=period)
+        if category_id := params.get("category_id"):
+            filters &= Q(plan__subscription__category__id=category_id)
+        if usage_score := params.get("usage_score"):
+            filters &= Q(usage_score=usage_score)
+        if track_usage := params.get("track_usage"):
+            filters &= Q(track_usage=track_usage.lower() == "true")
+
+        return queryset.filter(filters)
 
     def create(self, request):
         user = request.user
         plan_id = request.data.get("plan_id")
+        next_payment_date_str = request.data.get("next_payment_date")
 
         plan = get_object_or_404(Plan, id=plan_id)
 
@@ -157,10 +172,18 @@ class UserPlanView(viewsets.ModelViewSet):
                 {"error": "Plan already added to your subscriptions."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+        next_payment_date = parse_date(next_payment_date_str)
+
+        if next_payment_date is None:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 
         user_plan = UserPlan.objects.create(
-            user=user,
-            plan=plan,
+            user=user, plan=plan, next_payment_date=next_payment_date
         )
 
         return Response(

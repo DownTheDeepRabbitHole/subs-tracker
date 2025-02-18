@@ -42,10 +42,19 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/new-plan',
+      name: 'new plan',
+      component: AddPlanView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
 })
 
 import { jwtDecode } from 'jwt-decode'
+import AddPlanView from '@/views/AddPlanView.vue'
 
 // From https://medium.com/@tahnyybelguith/authentication-and-authorization-implementation-with-vue-js-6afcbb821c85
 router.beforeEach((to, from, next) => {

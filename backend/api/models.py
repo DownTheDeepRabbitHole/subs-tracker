@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from . import screentime, notifications
-
+from datetime import date
 
 class User(AbstractUser):
     remember_me = models.BooleanField(default=False)
@@ -34,9 +34,11 @@ class Subscription(models.Model):
 # Shared payment plans table
 class Plan(models.Model):
     PERIOD_CHOICES = [
-        ("month", "Month"),
-        ("year", "Year"),
+        ("day", "Day"),
         ("week", "Week"),
+        ("month", "Month"),
+        ("quarter", "Quarter"),
+        ("year", "Year"),
     ]
 
     subscription = models.ForeignKey(
@@ -57,7 +59,7 @@ class UserPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_plans")
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
 
-    next_payment_date = models.DateField(null=True, blank=True)
+    next_payment_date = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
     track_usage = models.BooleanField(default=False)
     usage_score = models.IntegerField(default=0, choices=USAGE_SCORE_CHOICES)

@@ -19,14 +19,16 @@ class PlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
         fields = "__all__"
-        
+
+
 class PlanSerializerwithSubs(serializers.ModelSerializer):
     subscription = SubscriptionSerializer()
-    
+
     class Meta:
         model = Plan
         fields = "__all__"
-        
+
+
 class UserPlanSerializer(serializers.ModelSerializer):
     plan = PlanSerializerwithSubs()
 
