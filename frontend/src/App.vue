@@ -1,36 +1,30 @@
 <script setup>
-import axios from 'axios'
+import { ref } from 'vue'
 
-import Navbar from './components/Navbar.vue'
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
 
-// async function permissionChangeListener(permission) {
-//   if (permission) {
-//     const id = await getUserId()
+import Sidebar from './components/Sidebar.vue'
 
-//     console.log(id.toString())
+const isSidebarCollapsed = ref(false)
 
-//     OneSignal.login(id.toString()).catch((error) => {
-//       console.error('OneSignal login error: ', error)
-//     })
-//   }
-// }
-
-// OneSignalDeferred.push(function (OneSignal) {
-//   OneSignal.Notifications.addEventListener('permissionChange', permissionChangeListener)
-// })
-
-// const getUserId = async () => {
-//   const response = await axios.get('/api/get-user-id')
-//   return response.data['user_id'].toString()
-// }
+const toggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
 </script>
 
 <template>
   <Toast />
-  <Navbar v-if="$route.meta.requiresAuth" />
-  <div class="min-h-screen flex justify-center items-center bg-surface-100 dark:bg-surface-900">
-    <RouterView />
+  <div class="flex min-h-screen bg-surface-100 dark:bg-surface-900">
+    <div v-if="$route.meta.requiresAuth" :class="isSidebarCollapsed ? 'w-16' : 'w-64'">
+      <Sidebar
+        :is-collapsed="isSidebarCollapsed"
+        @toggle-sidebar="toggleSidebar"
+      />
+    </div>
+
+    <div :class="['flex-1', $route.meta.requiresAuth ? 'ml-20' : 'flex justify-center items-center']">
+      <RouterView />
+    </div>
   </div>
 </template>
