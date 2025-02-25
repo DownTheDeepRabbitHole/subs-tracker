@@ -6,6 +6,7 @@ import App from './App.vue'
 
 import router from './router'
 import axios from 'axios'
+import Cookies from 'js-cookie'
 
 import ToastService from 'primevue/toastservice'
 
@@ -16,11 +17,11 @@ axios.defaults.headers['Content-Type'] = 'application/json'
 
 axios.interceptors.request.use(
   function (config) {
-    const token = localStorage.getItem('access_token')
+    const token = Cookies.get('access_token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     } else {
-      delete axios.defaults.headers.common['Authorization']
+      delete config.headers['Authorization']
     }
     return config
   },

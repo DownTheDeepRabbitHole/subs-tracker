@@ -4,6 +4,7 @@ import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 import SharedListView from '@/views/SharedListView.vue'
 import MyListView from '@/views/MyListView.vue'
+import AddPlanView from '@/views/AddPlanView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,18 +55,18 @@ const router = createRouter({
 })
 
 import { jwtDecode } from 'jwt-decode'
-import AddPlanView from '@/views/AddPlanView.vue'
+import Cookies from 'js-cookie'
 
 // From https://medium.com/@tahnyybelguith/authentication-and-authorization-implementation-with-vue-js-6afcbb821c85
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('access_token')
+  const token = Cookies.get('access_token')
 
   // Check for token expiry to ensure users have authenticated to access webpages
   if (token) {
     const jwtPayload = jwtDecode(token)
 
     if (jwtPayload.exp < Date.now() / 1000) {
-      localStorage.removeItem('access_token')
+      Cookies.remove('access_token')
       next('/login')
       return
     }

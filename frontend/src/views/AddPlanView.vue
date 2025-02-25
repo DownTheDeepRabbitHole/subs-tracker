@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
+
 import { useToast } from 'primevue/usetoast'
+
 import Card from '@/components/Card.vue'
 import AutoComplete from 'primevue/autocomplete'
 import Select from 'primevue/select'
@@ -96,7 +98,7 @@ const createPlan = async () => {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-4 p-4">
+  <div class="min-w-[80%] grid grid-cols-2 gap-4 p-4">
     <Card>
       <h2 class="text-xl font-semibold mb-4">Add New Plan</h2>
       <div class="p-fluid">
