@@ -13,7 +13,9 @@ from .serializers import (
     PlanSerializer,
     UserPlanSerializer,
     CategorySerializer,
+    UserSettingsSerializer,
 )
+
 from datetime import date, timedelta
 from . import screentime, notifications
 from .utils import budget_plans
@@ -259,6 +261,19 @@ class OptimizeBudget(APIView):
 
         return Response({"subscriptions": optimized_subs}, status=status.HTTP_200_OK)
 
+class UserSettingsView(APIView):
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserSettingsSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user 
+        serializer = UserSettingsSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()  # Save updated settings
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
 class GetUserId(APIView):
     def get(self, request):

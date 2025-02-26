@@ -1,19 +1,15 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import PanelMenu from 'primevue/panelmenu'
 import Button from 'primevue/button'
-import router from '@/router'
-
 import Cookies from 'js-cookie'
 
-// Define the props and emits
-const props = defineProps({
-  isCollapsed: Boolean,
-})
+const router = useRouter()
 
-const emit = defineEmits(['toggle-sidebar'])
+// Reactive variable for sidebar collapse state
+const isCollapsed = ref(false)
 
-// Menu items
 const menuItems = [
   { label: 'Home', icon: 'pi pi-home', route: '/' },
   { label: 'Shared List', icon: 'pi pi-users', route: '/shared-list' },
@@ -24,63 +20,75 @@ const menuItems = [
 const logout = () => {
   Cookies.remove('access_token')
   Cookies.remove('refresh_token')
-
-  OneSignalDeferred.push(async function (OneSignal) {
-    await OneSignal.logout()
-    console.log('logged out')
-  })
-
   router.push('/login')
 }
 
-// Function to toggle collapse (emit event to parent)
-const toggleSidebar = () => {
-  emit('toggle-sidebar') // This emits the toggle-sidebar event
+const isActive = (path) => {
+  return router.currentRoute.value.path === path
 }
 
-const isActive = (path) => useRoute().path === path
+// Function to toggle sidebar collapse state
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 </script>
 
 <template>
-  <aside
-    :class="[
-      'fixed top-0 left-0 h-screen transition-all duration-300 bg-white border-r dark:bg-gray-800 dark:border-gray-700 flex flex-col',
-      props.isCollapsed ? 'w-20' : 'w-64',
-    ]"
+  <div
+    :class="{ 'w-16': isCollapsed, 'w-64': !isCollapsed }"
+    class="flex-shrink-0 overflow-x-hidden transition-all duration-300"
   >
-    <!-- Header & Toggle Button -->
-    <div class="flex items-center justify-between p-4">
-      <span v-if="!props.isCollapsed" class="text-xl font-bold text-primary">Sub Tracker</span>
-      <Button icon="pi pi-bars" class="p-button-text p-2" @click="toggleSidebar" />
-    </div>
+    <aside
+      :class="[
+        'fixed top-0 left-0 z-10 h-screen bg-white border-r dark:bg-gray-800 dark:border-gray-700 transition-all duration-300',
+        isCollapsed ? 'w-16' : 'w-64',
+      ]"
+    >
+      <div class="flex items-center justify-between p-4">
+        <!-- Logo/Brand -->
+        <span v-if="!isCollapsed" class="text-xl font-bold text-primary">Sub Tracker</span>
+        <!-- Toggle Button -->
+        <Button icon="pi pi-bars" class="p-button-text p-2" @click="toggleSidebar" />
+      </div>
 
-    <!-- Menu Items -->
-    <div class="flex-1 overflow-auto">
-      <router-link
-        v-for="item in menuItems"
-        :key="item.route"
-        :to="item.route"
-        class="flex items-center gap-4 px-4 py-3 rounded-md transition-all text-lg"
-        :class="
-          isActive(item.route)
-            ? 'bg-primary text-white'
-            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+      <!-- PanelMenu -->
+      <PanelMenu
+        :model="
+          menuItems.map((item) => ({
+            label: isCollapsed ? '' : item.label,
+            icon: item.icon,
+            command: () => router.push(item.route),
+            class: isActive(item.route) ? 'bg-primary text-white' : '',
+          }))
         "
-      >
-        <i :class="item.icon"></i>
-        <span v-if="!props.isCollapsed">{{ item.label }}</span>
-      </router-link>
-    </div>
-
-    <!-- Logout Button -->
-    <div class="p-4 mt-auto">
-      <Button
-        label="Logout"
-        icon="pi pi-sign-out"
-        class="w-full p-button-danger flex items-center"
-        :class="{ 'justify-center': props.isCollapsed }"
-        @click="logout"
+        class="p-3"
       />
-    </div>
-  </aside>
+
+      <!-- Logout Button -->
+      <div class="p-4">
+        <Button
+          label="Logout"
+          icon="pi pi-sign-out"
+          class="w-full p-button-danger"
+          @click="logout"
+        />
+      </div>
+    </aside>
+  </div>
 </template>
+
+<style scoped>
+.p-panelmenu .p-menuitem-link {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s ease;
+}
+
+.p-panelmenu .p-menuitem-link:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .p-panelmenu .p-menuitem-link:hover {
+  background-color: #4b5563;
+}
+</style>

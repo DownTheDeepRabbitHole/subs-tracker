@@ -11,6 +11,7 @@ import Cookies from 'js-cookie'
 import ToastService from 'primevue/toastservice'
 
 import PrimeVue from 'primevue/config'
+import Aura from '@primeuix/themes/aura';
 
 axios.defaults.baseURL = 'http://localhost:8000/'
 axios.defaults.headers['Content-Type'] = 'application/json'
@@ -35,7 +36,15 @@ const app = createApp(App)
 app.use(ToastService)
 
 app.use(PrimeVue, {
-  theme: 'none',
+  theme: {
+    preset: Aura,
+    options: {
+        cssLayer: {
+            name: 'primevue',
+            order: 'theme, base, primevue'
+        }
+    }
+}
 })
 app.use(router)
 

@@ -1,7 +1,11 @@
 from rest_framework import serializers
 
-from .models import Category, Subscription, Plan, UserPlan
+from .models import User, Category, Subscription, Plan, UserPlan
 
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['allow_notifications', 'api_key_encrypted', 'advance_period', 'unused_threshold']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

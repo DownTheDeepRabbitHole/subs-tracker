@@ -1,30 +1,22 @@
 <script setup>
-import { ref } from 'vue'
-
+import Sidebar from '@/components/Sidebar.vue'
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
-
-import Sidebar from './components/Sidebar.vue'
-
-const isSidebarCollapsed = ref(false)
-
-const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-}
 </script>
 
 <template>
   <Toast />
-  <div class="flex min-h-screen bg-surface-100 dark:bg-surface-900">
-    <div v-if="$route.meta.requiresAuth" :class="isSidebarCollapsed ? 'w-16' : 'w-64'">
-      <Sidebar
-        :is-collapsed="isSidebarCollapsed"
-        @toggle-sidebar="toggleSidebar"
-      />
-    </div>
+  <div class="flex h-screen">
+    <Sidebar v-if="$route.meta.requiresAuth" />
 
-    <div :class="['flex-1', $route.meta.requiresAuth ? 'ml-20' : 'flex justify-center items-center']">
+    <main
+      class="p-6 w-full"
+      :class="{
+        'flex justify-center items-center': !$route.meta.requiresAuth,
+        'flex-1 flex-col': $route.meta.requiresAuth,
+      }"
+    >
       <RouterView />
-    </div>
+    </main>
   </div>
 </template>

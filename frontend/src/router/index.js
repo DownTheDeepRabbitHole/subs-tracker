@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue'
 import SharedListView from '@/views/SharedListView.vue'
 import MyListView from '@/views/MyListView.vue'
 import AddPlanView from '@/views/AddPlanView.vue'
+import TestView from '@/views/TestView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,11 +52,28 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/test',
+      name: 'test',
+      component: TestView,
+      meta: {
+        requiresAuth: false,
+      },
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
 })
 
 import { jwtDecode } from 'jwt-decode'
 import Cookies from 'js-cookie'
+import SettingsView from '@/views/SettingsView.vue'
 
 // From https://medium.com/@tahnyybelguith/authentication-and-authorization-implementation-with-vue-js-6afcbb821c85
 router.beforeEach((to, from, next) => {

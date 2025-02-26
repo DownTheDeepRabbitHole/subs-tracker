@@ -16,6 +16,7 @@ auth_urlpatterns = [
 ]
 
 user_urlpatterns = [
+    path('settings/', UserSettingsView.as_view(), name='settings'),
     path('update/', UpdateView.as_view(), name='update-profile'),
     path('update-unused/', UpdateUnusedView.as_view(), name='update-unused'),
     path('get-user-id/', GetUserId.as_view(), name='get-user-id'),
