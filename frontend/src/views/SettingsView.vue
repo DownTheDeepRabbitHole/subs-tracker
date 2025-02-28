@@ -8,7 +8,6 @@ import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Slider from 'primevue/slider'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 
 const toast = useToast()
 
@@ -66,48 +65,34 @@ onMounted(fetchSettings)
 </script>
 
 <template>
-  <div class="p-6">
-    <Card>
-      <template #title> User Settings </template>
-      <template #content>
-        <div class="flex flex-col gap-4">
-          <div class="flex items-center gap-2">
-            <Checkbox v-model="settings.allow_notifications" :binary="true" />
-            <label>Enable Notifications</label>
-          </div>
-
-          <div class="flex flex-col">
-            <label>API Key (for Screen Time)</label>
-            <InputText v-model="settings.api_key_encrypted" type="password" class="w-full" />
-          </div>
-
-          <div class="flex flex-col">
-            <label>Advance Period (in months)</label>
-            <Slider v-model="settings.advance_period" :min="1" :max="12" class="w-full" />
-            <span>{{ settings.advance_period }} months</span>
-          </div>
-
-          <div class="flex flex-col">
-            <label>Unused Threshold</label>
-            <Slider v-model="settings.unused_threshold" :min="0" :max="10" class="w-full" />
-            <span>{{ settings.unused_threshold }}</span>
-          </div>
-
-          <Button
-            label="Save Settings"
-            icon="pi pi-save"
-            :loading="loading"
-            @click="saveSettings"
-          />
+  <Card class="w-full">
+    <template #title> User Settings </template>
+    <template #content>
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="settings.allow_notifications" :binary="true" />
+          <label>Enable Notifications</label>
         </div>
-      </template>
-    </Card>
-  </div>
-</template>
 
-<style scoped>
-.p-card {
-  max-width: 500px;
-  margin: auto;
-}
-</style>
+        <div class="flex flex-col">
+          <label>API Key (for Screen Time)</label>
+          <InputText v-model="settings.api_key_encrypted" type="password" class="w-full" />
+        </div>
+
+        <div class="flex flex-col">
+          <label>Advance Period (in months)</label>
+          <Slider v-model="settings.advance_period" :min="1" :max="12" class="w-full" />
+          <span>{{ settings.advance_period }} months</span>
+        </div>
+
+        <div class="flex flex-col">
+          <label>Unused Threshold</label>
+          <Slider v-model="settings.unused_threshold" :min="0" :max="10" class="w-full" />
+          <span>{{ settings.unused_threshold }}</span>
+        </div>
+
+        <Button label="Save Settings" icon="pi pi-save" :loading="loading" @click="saveSettings" />
+      </div>
+    </template>
+  </Card>
+</template>

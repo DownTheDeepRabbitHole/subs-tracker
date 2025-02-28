@@ -1,13 +1,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import PanelMenu from 'primevue/panelmenu'
+import Menu from 'primevue/menu'
 import Button from 'primevue/button'
 import Cookies from 'js-cookie'
 
 const router = useRouter()
-
-// Reactive variable for sidebar collapse state
 const isCollapsed = ref(false)
 
 const menuItems = [
@@ -23,11 +21,8 @@ const logout = () => {
   router.push('/login')
 }
 
-const isActive = (path) => {
-  return router.currentRoute.value.path === path
-}
+const isActive = (path) => router.currentRoute.value.path === path
 
-// Function to toggle sidebar collapse state
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
@@ -35,60 +30,45 @@ const toggleSidebar = () => {
 
 <template>
   <div
-    :class="{ 'w-16': isCollapsed, 'w-64': !isCollapsed }"
+    :class="{ 'w-[70px]': isCollapsed, 'w-64': !isCollapsed }"
     class="flex-shrink-0 overflow-x-hidden transition-all duration-300"
   >
     <aside
-      :class="[
-        'fixed top-0 left-0 z-10 h-screen bg-white border-r dark:bg-gray-800 dark:border-gray-700 transition-all duration-300',
-        isCollapsed ? 'w-16' : 'w-64',
-      ]"
+      class="fixed top-0 left-0 z-10 h-screen bg-white border-r border-gray-200 shadow-md flex flex-col p-3"
+      :class="isCollapsed ? 'w-[70px]' : 'w-64'"
     >
-      <div class="flex items-center justify-between p-4">
-        <!-- Logo/Brand -->
-        <span v-if="!isCollapsed" class="text-xl font-bold text-primary">Sub Tracker</span>
-        <!-- Toggle Button -->
-        <Button icon="pi pi-bars" class="p-button-text p-2" @click="toggleSidebar" />
+      <div class="flex items-center justify-between px-3 h-14">
+        <span v-if="!isCollapsed" class="text-lg font-semibold text-gray-800">SubsTracker</span>
+        <Button icon="pi pi-bars" @click="toggleSidebar" rounded variant="text" />
       </div>
 
-      <!-- PanelMenu -->
-      <PanelMenu
-        :model="
-          menuItems.map((item) => ({
-            label: isCollapsed ? '' : item.label,
-            icon: item.icon,
-            command: () => router.push(item.route),
-            class: isActive(item.route) ? 'bg-primary text-white' : '',
-          }))
-        "
-        class="p-3"
-      />
+      <nav class="mt-4">
+        <ul>
+          <li v-for="item in menuItems" :key="item.route" class="mb-2">
+            <Button
+              severity="secondary"
+              class="w-full flex justify-start items-center min-h-11"
+              :class="{ 'text-primary-500 bg-primary-100': isActive(item.route) }"
+              @click="router.push(item.route)"
+              variant="text"
+            >
+              <i :class="item.icon"></i>
+              <span v-if="!isCollapsed" class="ml-2">{{ item.label }}</span>
+            </Button>
+          </li>
+        </ul>
+      </nav>
 
-      <!-- Logout Button -->
-      <div class="p-4">
+      <div class="mt-auto border-t pt-3">
         <Button
-          label="Logout"
+          :label="!isCollapsed ? 'Logout' : ''"
           icon="pi pi-sign-out"
-          class="w-full p-button-danger"
+          severity="danger"
+          variant="text"
           @click="logout"
+          fluid
         />
       </div>
     </aside>
   </div>
 </template>
-
-<style scoped>
-.p-panelmenu .p-menuitem-link {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s ease;
-}
-
-.p-panelmenu .p-menuitem-link:hover {
-  background-color: #e5e7eb;
-}
-
-.dark .p-panelmenu .p-menuitem-link:hover {
-  background-color: #4b5563;
-}
-</style>

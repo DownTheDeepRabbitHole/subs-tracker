@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import Chart from 'primevue/chart'
-import Card from '@/components/Card.vue'
+import Card from 'primevue/card'
 
 const spendingByCategoryChartData = ref({
   labels: [],
@@ -62,8 +62,9 @@ const fetchSpendingByCategory = async () => {
 
     // Update pie chart data
     spendingByCategoryChartData.value.labels = Object.keys(data)
-    spendingByCategoryChartData.value.datasets[0].data = Object.values(data).map((category) => category.yearly)
-    console.log(data)
+    spendingByCategoryChartData.value.datasets[0].data = Object.values(data).map(
+      (category) => category.yearly,
+    )
   } catch (error) {
     console.error('Error fetching spending by category:', error)
   }
@@ -82,36 +83,46 @@ onMounted(() => {
     <!-- Spending per Period (Big Numbers) -->
     <div class="p-col-12 p-md-4">
       <Card>
-        <h3>Weekly Spending</h3>
-        <h1 class="big-number">${{ spendingPerPeriod.past_week }}</h1>
+        <template #content>
+          <h3>Weekly Spending</h3>
+          <h1 class="big-number">${{ spendingPerPeriod.past_week }}</h1>
+        </template>
       </Card>
     </div>
     <div class="p-col-12 p-md-4">
       <Card>
-        <h3>Monthly Spending</h3>
-        <h1 class="big-number">${{ spendingPerPeriod.past_month }}</h1>
+        <template #content>
+          <h3>Monthly Spending</h3>
+          <h1 class="big-number">${{ spendingPerPeriod.past_month }}</h1>
+        </template>
       </Card>
     </div>
     <div class="p-col-12 p-md-4">
       <Card>
-        <h3>Yearly Spending</h3>
-        <h1 class="big-number">${{ spendingPerPeriod.past_year }}</h1>
+      <template #content>
+          <h3>Yearly Spending</h3>
+          <h1 class="big-number">${{ spendingPerPeriod.past_year }}</h1>
+        </template>
       </Card>
     </div>
 
     <!-- Spending by Category (Pie Chart) -->
     <div class="p-col-12 p-md-6">
       <Card>
-        <h3>Spending by Category</h3>
-        <Chart type="doughnut" :data="spendingByCategoryChartData" />
+      <template #content>
+          <h3>Spending by Category</h3>
+          <Chart type="doughnut" :data="spendingByCategoryChartData" />
+        </template>
       </Card>
     </div>
 
     <!-- Usage by Category (Pie Chart) -->
     <div class="p-col-12">
       <Card>
-        <h3>Usage by Category</h3>
-        <Chart type="pie" :data="usageByCategoryChartData" />
+        <template #content>
+          <h3>Usage by Category</h3>
+          <Chart type="pie" :data="usageByCategoryChartData" />
+        </template>
       </Card>
     </div>
   </div>

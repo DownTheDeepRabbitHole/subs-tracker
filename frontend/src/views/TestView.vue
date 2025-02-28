@@ -1,26 +1,8 @@
 <template>
-  <div>DSFSD</div>
-  <div :class="boxClasses">This is a dynamically styled box.</div>
-
-  <button @click="toggleClass">Toggle Box Style</button>
+  <div style="position: relative; height: 300px; background-color: palegreen">
+    E
+    <div style="position: absolute; top: 50px; left: 100px; background-color: yellow">
+      This is also absolutely positioned relative to the parent container.
+    </div>
+  </div>
 </template>
-
-<script setup>
-import { ref, computed } from 'vue'
-
-const isActive = ref(false)
-
-const boxClasses = computed(() => {
-  return {
-    'bg-blue-500': isActive.value,
-    'bg-gray-300': !isActive.value,
-    'text-white': true, // Keep text white regardless of isActive
-    'p-4': true, // Always have padding
-    'rounded-lg': true, // Always have rounded corners
-  }
-})
-
-const toggleClass = () => {
-  isActive.value = !isActive.value
-}
-</script>

@@ -9,16 +9,23 @@ import Button from 'primevue/button'
 import DataView from 'primevue/dataview'
 import Dialog from 'primevue/dialog'
 import DatePicker from 'primevue/datepicker'
-import Card from './Card.vue'
+import SelectButton from 'primevue/selectbutton'
+import Divider from 'primevue/divider'
+import Card from 'primevue/card'
 
 const toast = useToast()
 
 const subscriptions = ref([])
 const categories = ref([])
+
 const layout = ref('grid')
+const options = ref(['list', 'grid'])
+
 const showDateDialog = ref(false)
 const selectedPlan = ref(null)
 const nextPaymentDate = ref(null)
+
+const today = ref(new Date())
 
 const fetchSubscriptions = async () => {
   try {
@@ -77,50 +84,62 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 flex justify-between items-center">
-      <RouterLink to="/new-plan" class="p-button p-button-success">Add Plan</RouterLink>
-      <Button @click="layout = layout == `grid` ? `list` : `grid`">Layout</Button>
-    </div>
+  <DataView :value="subscriptions" :layout="layout">
+    <template #header>
+      <div class="flex justify-between">
+        <RouterLink to="/new-plan" class="p-button p-button-success">Add Plan</RouterLink>
+        <SelectButton v-model="layout" :options="options" :allowEmpty="false">
+          <template #option="{ option }">
+            <i :class="[option === 'list' ? 'pi pi-bars' : 'pi pi-table']" />
+          </template>
+        </SelectButton>
+      </div>
+    </template>
 
-    <DataView :value="subscriptions" :layout="layout">
-      <template #list="slotProps">
-        <div class="grid grid-nogutter">
-          <div v-for="(item, index) in slotProps.items" :key="index" class="col-12">
-            <div class="p-3 border-b">
-              <div class="mb-2">
-                <b>{{ item.name }}</b> - {{ getCategoryName(item.category) }}
-              </div>
-              <div
-                v-for="plan in item.plans"
-                :key="plan.id"
-                class="flex justify-between items-center ml-4 mt-2"
-              >
-                <span>{{ plan.name }} ({{ plan.period }}) - ${{ plan.cost }}</span>
-                <Button
-                  icon="pi pi-plus"
-                  severity="success"
-                  @click="
-                    () => {
-                      selectedPlan = plan
-                      showDateDialog = true
-                    }
-                  "
-                />
+    <template #list="slotProps">
+      <div class="grid grid-nogutter">
+        <div v-for="(item, index) in slotProps.items" :key="index" class="col-12">
+          <div class="p-3">
+            <div class="flex items-center space-x-2">
+              <img :src="item.icon_url" alt="item.name" class="w-10 rounded-full" />
+              <div>
+                <b>{{ item.name }}</b>
+                <p class="text-sm text-medium-grey">{{ getCategoryName(item.category) }}</p>
               </div>
             </div>
+            <div
+              v-for="plan in item.plans"
+              :key="plan.id"
+              class="flex justify-between items-center ml-4 mt-2"
+            >
+              <span>{{ plan.name }} ({{ plan.period }}) - ${{ plan.cost }}</span>
+              <Button
+                icon="pi pi-plus"
+                @click="
+                  () => {
+                    selectedPlan = plan
+                    showDateDialog = true
+                  }
+                "
+                variant="text"
+                rounded
+              />
+            </div>
+            <Divider />
           </div>
         </div>
-      </template>
+      </div>
+    </template>
 
-      <template #grid="slotProps">
-        <div class="grid grid-cols-12 gap-4">
-          <div
-            v-for="(item, index) in slotProps.items"
-            :key="index"
-            class="col-span-12 sm:col-span-6 md:col-span-4 xl:col-span-6 p-2"
-          >
-            <Card>
+    <template #grid="slotProps">
+      <div class="grid grid-cols-12 gap-4">
+        <div
+          v-for="(item, index) in slotProps.items"
+          :key="index"
+          class="col-span-12 sm:col-span-6 md:col-span-4 xl:col-span-6 p-2"
+        >
+          <Card>
+            <template #content>
               <div class="flex items-center space-x-2">
                 <img :src="item.icon_url" alt="item.name" class="w-10 rounded-full" />
                 <div>
@@ -137,39 +156,43 @@ onMounted(() => {
                   <span>{{ plan.name }} (${{ plan.cost }} / {{ plan.period }})</span>
                   <Button
                     icon="pi pi-plus"
-                    severity="success"
                     @click="
                       () => {
                         selectedPlan = plan
                         showDateDialog = true
                       }
                     "
+                    variant="text"
+                    rounded
                   />
                 </li>
               </ul>
-            </Card>
-          </div>
+            </template>
+          </Card>
         </div>
-      </template>
-    </DataView>
-
-    <Dialog
-      header="Select Next Payment Date"
-      v-model:visible="showDateDialog"
-      :modal="true"
-      :closable="false"
-      :style="{ width: '30vw' }"
-    >
-      <DatePicker v-model="nextPaymentDate" dateFormat="yy-mm-dd" showIcon />
-      <div class="flex justify-end gap-2 mt-4">
-        <Button
-          label="Cancel"
-          icon="pi pi-times"
-          @click="showDateDialog = false"
-          class="p-button-text"
-        />
-        <Button label="Add" icon="pi pi-check" @click="addToUserPlans" />
       </div>
-    </Dialog>
-  </div>
+    </template>
+  </DataView>
+
+  <Dialog
+    header="Select Next Payment Date"
+    v-model:visible="showDateDialog"
+    :modal="true"
+    :closable="false"
+    class="w-100"
+  >
+    <div class="flex justify-center items-center">
+      <DatePicker v-model="nextPaymentDate" :minDate="today" dateFormat="yy-mm-dd" inline />
+    </div>
+
+    <template #footer class="flex justify-end gap-2 mt-4">
+      <Button
+        label="Cancel"
+        icon="pi pi-times"
+        @click="showDateDialog = false"
+        class="p-button-text"
+      />
+      <Button label="Add" icon="pi pi-check" @click="addToUserPlans" />
+    </template>
+  </Dialog>
 </template>

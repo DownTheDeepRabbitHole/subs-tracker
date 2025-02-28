@@ -12,7 +12,6 @@ import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Card from './Card.vue'
 import { FilterMatchMode } from '@primevue/core/api'
 
 const categories = ref([])
@@ -24,7 +23,7 @@ const filters = ref({
   plan_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
   category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
   period: { value: null, matchMode: FilterMatchMode.EQUALS },
-  costRange: [0, 1000],
+  cost: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
   track_usage: { value: null, matchMode: FilterMatchMode.EQUALS },
 })
 
@@ -77,7 +76,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <Card class="w-full">
     <DataTable
       v-model:filters="filters"
       :value="userPlans"
@@ -100,11 +98,15 @@ onMounted(() => {
         </div>
       </template>
 
-      <!-- Plan Name -->
       <Column field="plan_name" header="Plan Name" sortable filterField="plan_name">
         <template #body="{ data }">
-          <img :src="data.icon_url" alt="data.plan_name" class="w-5" />
-          <span>{{ data.plan_name }} - {{ data.subscription_name }}</span>
+          <div class="flex items-center space-x-2">
+            <img :src="data.icon_url" alt="data.plan_name" class="w-10 rounded-full" />
+            <div>
+              <b>{{ data.plan_name }}</b>
+              <p class="text-sm text-medium-grey">{{ data.subscription_name }}</p>
+            </div>
+          </div>
         </template>
         <template #filter="{ filterModel, filterCallback }">
           <InputText
@@ -116,7 +118,6 @@ onMounted(() => {
         </template>
       </Column>
 
-      <!-- Category Filter -->
       <Column
         field="category_id"
         header="Category"
@@ -139,50 +140,37 @@ onMounted(() => {
         </template>
       </Column>
 
-      <!-- Payment Date -->
       <Column field="payment_date" header="Next Payment Date" sortable></Column>
 
-      <!-- Cost Filter -->
       <Column field="cost" header="Cost" sortable filterField="cost" :showFilterMenu="false">
         <template #filter="{ filterModel, filterCallback }">
           <div class="min-w-40 grid grid-flow-dense">
             <div class="mb-5">
-              <Slider
-                id="costRange"
-                v-model="filters.costRange"
-                @input="filterCallback"
-                :min="0"
-                :max="1000"
-                range
-                class="w-full"
-              />
+              <Slider v-model="filterModel.value" @change="filterCallback()" range class="w-full" />
             </div>
-            <div>
-              <span>
-                <InputNumber
-                  v-model="filters.costRange[0]"
-                  :min="0"
-                  :max="filters.costRange[1]"
-                  @input="filterCallback()"
-                  fluid
-                  class="w-[4rem]"
-                />
-                -
-                <InputNumber
-                  v-model="filters.costRange[1]"
-                  :min="filters.costRange[0]"
-                  max="1000"
-                  @input="filterCallback()"
-                  fluid
-                  class="w-[4rem]"
-                />
-              </span>
+            <div class="flex items-center justify-between px-2">
+              <InputNumber
+                v-model="filterModel.value[0]"
+                :min="0"
+                :max="filterModel.value[1]"
+                @input="filterCallback()"
+                fluid
+                class="w-[4rem]"
+              />
+              -
+              <InputNumber
+                v-model="filterModel.value[1]"
+                :min="filterModel.value[0]"
+                :max="100"
+                @input="filterCallback()"
+                fluid
+                class="w-[4rem]"
+              />
             </div>
           </div>
         </template>
       </Column>
 
-      <!-- Period Filter -->
       <Column field="period" header="Period" filterField="period" :showFilterMenu="false">
         <template #filter="{ filterModel, filterCallback }">
           <Select
@@ -195,10 +183,8 @@ onMounted(() => {
         </template>
       </Column>
 
-      <!-- Usage Score -->
       <Column field="usage_score" header="Usage Score" sortable></Column>
 
-      Track Usage
       <Column field="track_usage" header="Track Usage">
         <template #body="{ data }">
           <i
@@ -214,7 +200,6 @@ onMounted(() => {
         </template>
       </Column>
 
-      <!-- Actions -->
       <Column header="Actions">
         <template #body="{ data }">
           <Button
@@ -228,5 +213,4 @@ onMounted(() => {
         </template>
       </Column>
     </DataTable>
-  </Card>
 </template>

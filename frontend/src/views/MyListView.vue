@@ -1,10 +1,12 @@
 <script setup>
-import Card from '@/components/Card.vue'
 import UserPlanList from '@/components/UserPlanList.vue'
+import Card from 'primevue/card'
 </script>
 
 <template>
-  <Card class="max-w-[80%]">
-    <UserPlanList />
+  <Card class="w-full">
+    <template #content>
+      <UserPlanList />
+    </template>
   </Card>
 </template>

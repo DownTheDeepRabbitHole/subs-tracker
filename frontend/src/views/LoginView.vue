@@ -12,7 +12,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
-import Card from '@/components/Card.vue'
+import Card from 'primevue/card'
 
 const toast = useToast()
 
@@ -73,35 +73,69 @@ const getUserId = async () => {
 </script>
 
 <template>
-  <Card class="max-w-md">
-    <h2 class="text-center text-2xl font-semibold mb-6 text-text-color dark:text-text-color">Login</h2>
+  <Card class="w-100">
+    <template #content>
+      <h2 class="text-center text-2xl font-semibold mb-6 text-text-color dark:text-text-color">
+        Login
+      </h2>
 
-    <form @submit.prevent="onSubmit">
-      <div class="mb-4">
-        <label for="username" class="block text-sm font-medium text-text-muted-color dark:text-text-muted-color"> Username </label>
-        <InputText inputId="username" v-model="username" placeholder="Enter your username" fluid />
+      <form @submit.prevent="onSubmit">
+        <div class="mb-4">
+          <label
+            for="username"
+            class="block text-sm font-medium text-text-muted-color dark:text-text-muted-color"
+          >
+            Username
+          </label>
+          <InputText
+            inputId="username"
+            v-model="username"
+            placeholder="Enter your username"
+            fluid
+          />
+        </div>
+
+        <div class="mb-4">
+          <label
+            for="password"
+            class="block text-sm font-medium text-text-muted-color dark:text-text-muted-color"
+          >
+            Password
+          </label>
+          <Password
+            id="password"
+            v-model="password"
+            placeholder="Enter your password"
+            type="password"
+            :feedback="false"
+            ToggleMask
+            fluid
+          />
+        </div>
+
+        <div class="mb-6 flex items-center">
+          <Checkbox inputId="remember-me" v-model="rememberMe" binary />
+          <label for="remember-me" class="ml-2 text-sm">Remember me</label>
+        </div>
+
+        <div class="mb-6">
+          <Button
+            label="Login"
+            type="submit"
+            icon="pi pi-sign-in"
+            class="w-full p-button-lg p-button-primary"
+          />
+        </div>
+      </form>
+
+      <div class="text-center mt-4">
+        <p class="text-sm">
+          New user?
+          <RouterLink to="/register" class="text-blue-500 hover:underline"
+            >Create account</RouterLink
+          >
+        </p>
       </div>
-
-      <div class="mb-4">
-        <label for="password" class="block text-sm font-medium text-text-muted-color dark:text-text-muted-color"> Password </label>
-        <Password id="password" v-model="password" placeholder="Enter your password" type="password" :feedback="false" ToggleMask fluid />
-      </div>
-
-      <div class="mb-6 flex items-center">
-        <Checkbox inputId="remember-me" v-model="rememberMe" binary />
-        <label for="remember-me" class="ml-2 text-sm">Remember me</label>
-      </div>
-
-      <div class="mb-6">
-        <Button label="Login" type="submit" icon="pi pi-sign-in" class="w-full p-button-lg p-button-primary" />
-      </div>
-    </form>
-
-    <div class="text-center mt-4">
-      <p class="text-sm">
-        New user?
-        <RouterLink to="/register" class="text-blue-500 hover:underline">Create account</RouterLink>
-      </p>
-    </div>
+    </template>
   </Card>
 </template>
