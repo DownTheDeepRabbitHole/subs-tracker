@@ -14,6 +14,8 @@ import PrimeVue from 'primevue/config'
 import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 
+import VueApexCharts from "vue3-apexcharts";
+
 axios.defaults.baseURL = 'http://localhost:8000/'
 axios.defaults.headers['Content-Type'] = 'application/json'
 
@@ -113,6 +115,7 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(VueApexCharts)
 app.use(router)
 
 app.mount('#app')

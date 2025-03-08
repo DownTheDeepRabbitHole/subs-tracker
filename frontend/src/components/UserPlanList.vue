@@ -1,216 +1,290 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, watch } from 'vue'
 
-import Select from 'primevue/select'
-import InputIcon from 'primevue/inputicon'
-import IconField from 'primevue/iconfield'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Slider from 'primevue/slider'
-import Checkbox from 'primevue/checkbox'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { FilterMatchMode } from '@primevue/core/api'
+import { formatDistanceToNow } from 'date-fns'
 
-const categories = ref([])
-const userPlans = ref([])
-const periodOptions = ref(['Day', 'Month', 'Quarter', 'Year'])
+import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
 
-const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  plan_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
-  period: { value: null, matchMode: FilterMatchMode.EQUALS },
-  cost: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
-  track_usage: { value: null, matchMode: FilterMatchMode.EQUALS },
+const { deleteUserPlan, toggleUsage } = useSubscriptionManager()
+
+const periodOptions = [
+  { label: 'Any', value: '' },
+  { label: 'Day', value: 'day' },
+  { label: 'Month', value: 'month' },
+  { label: 'Quarter', value: 'quarter' },
+  { label: 'Year', value: 'year' },
+]
+
+const columns = {
+  plan: { field: 'plan', header: 'Plan', sortable: false },
+  category: { field: 'category', header: 'Category', sortable: false },
+  payment_date: { field: 'payment_date', header: 'Due', sortable: true },
+  cost: { field: 'cost', header: 'Cost/Period', sortable: true },
+  usage_score: { field: 'usage_score', header: 'Usage', sortable: true },
+  actions: { field: 'actions', header: 'Actions', sortable: false },
+}
+
+const props = defineProps({
+  userPlans: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+  categories: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+  fields: {
+    type: Array,
+    required: false,
+    default: () => ['plan', 'category', 'payment_date', 'cost', 'usage_score', 'actions'],
+  },
+  showFilters: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
 })
 
-const fetchCategories = async () => {
-  try {
-    const response = await axios.get('/api/categories/')
-    categories.value = response.data
-  } catch (error) {
-    console.error('Error fetching categories:', error)
+const visibleColumns = computed(() => {
+  return props.fields.map((field) => columns[field]).filter((col) => col !== undefined)
+})
+
+const emit = defineEmits(['refresh'])
+
+const filters = ref({})
+const initFilters = () => {
+  filters.value = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
+    cost: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
+    period: '',
   }
 }
+initFilters()
 
-const fetchUserPlans = async () => {
-  try {
-    // const { category_id, costRange, period } = filters.value
-    // console.log(periodOptions.value)
-    // console.log(period, typeof period)
-    // const queryParams = new URLSearchParams({
-    //   cost_min: costRange[0],
-    //   cost_max: costRange[1],
-    //   ...(category_id && { category_id }),
-    //   ...(period && { period: period.toLowerCase() }),
-    // }).toString()
-
-    const response = await axios.get(`/api/user-plans/?`)
-    userPlans.value = response.data
-  } catch (error) {
-    console.error('Error fetching user plans:', error)
+// Compute the maximum cost from user plans
+const costMax = computed(() => {
+  if (props.userPlans.length) {
+    return Math.max(...props.userPlans.map((plan) => plan.cost))
   }
-}
+  return 100
+})
 
-const deleteUserPlan = async (planId) => {
-  try {
-    await axios.delete(`/api/user-plans/${planId}/`)
-    fetchUserPlans()
-  } catch (error) {
-    console.error('Error deleting user plan:', error)
-  }
-}
+watch(
+  () => props.userPlans,
+  () => {
+    filters.value.cost.value = [0, costMax.value]
+  },
+  { immediate: true },
+)
 
 const getCategoryName = (categoryId) => {
-  const category = categories.value.find((cat) => cat.id === categoryId)
-  return category ? category.name : 'Unknown'
+  const cat = props.categories.find((c) => c.id === categoryId)
+  return cat ? cat.name : 'Unknown'
 }
 
-onMounted(() => {
-  fetchUserPlans()
-  fetchCategories()
-})
+const formatPaymentDate = (date) => {
+  return formatDistanceToNow(new Date(date), { addSuffix: true })
+}
+
+// Compute a color for usage score (0:red, 10:green).
+const getUsageColor = (score) => {
+  const green = Math.floor((score / 10) * 255)
+  const red = 255 - green
+  return `rgb(${red}, ${green}, 0)`
+}
+
+const clearFilter = () => {
+  initFilters()
+}
+
+const handlePeriodChange = () => {
+  console.log('New period:', filters.value.period)
+  emit('refresh', { period: filters.value.period })
+}
+
+const handleDelete = async (planId) => {
+  await deleteUserPlan(planId)
+  emit('refresh')
+}
+
+const handleToggleUsage = async (plan) => {
+  await toggleUsage(plan.id, plan.track_usage)
+  emit('refresh')
+}
 </script>
 
+<style scoped>
+/* Adjust text sizing for compact cells */
+.text-xs {
+  line-height: 1.2;
+}
+
+/* Example responsive adjustments */
+@media (min-width: 640px) {
+  .column-cell {
+    padding: 0.5rem !important;
+  }
+}
+</style>
+
 <template>
-    <DataTable
-      v-model:filters="filters"
-      :value="userPlans"
-      paginator
-      :rows="10"
-      dataKey="id"
-      filterDisplay="row"
-      removableSort
+  <DataTable
+    v-model:filters="filters"
+    :value="userPlans"
+    paginator
+    :rows="10"
+    :rowsPerPageOptions="[10, 20, 50]"
+    dataKey="id"
+    filterDisplay="menu"
+    :globalFilterFields="['subscription_name', 'plan_name']"
+    removableSort
+    class="sm:p-datatable-sm mx-auto w-full"
+  >
+    <!-- Header with Global Search and Clear Filters Button -->
+    <template #header v-if="showFilters">
+      <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+        <div class="w-full sm:w-1/3">
+          <IconField>
+            <InputIcon>
+              <i class="pi pi-search" />
+            </InputIcon>
+            <InputText
+              v-model="filters.global.value"
+              placeholder="Search plans..."
+              class="w-full"
+            />
+          </IconField>
+        </div>
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          outlined
+          @click="clearFilter"
+        />
+      </div>
+    </template>
+
+    <!-- Dynamic Columns -->
+    <Column
+      v-for="col in visibleColumns"
+      :key="col.field"
+      :field="col.field"
+      :header="col.header"
+      :sortable="showFilters && col.sortable"
+      :showFilterMatchModes="false"
+      class="column-cell"
     >
-      <template #header>
-        <div class="flex justify-between items-center">
-          <div class="w-1/3">
-            <IconField>
-              <InputIcon>
-                <i class="pi pi-search" />
-              </InputIcon>
-              <InputText v-model="filters['global'].value" placeholder="Search..." />
-            </IconField>
+      <!-- Plan Column -->
+      <template v-if="col.field === 'plan'" #body="{ data }">
+        <div class="flex items-center space-x-3">
+          <img
+            :src="data.icon_url"
+            :alt="data.plan_name"
+            class="w-10 h-10 rounded-lg object-cover"
+          />
+          <div>
+            <div class="font-semibold text-sm">{{ data.plan_name }}</div>
+            <div class="text-xs text-gray-500">{{ data.subscription_name }}</div>
           </div>
         </div>
       </template>
 
-      <Column field="plan_name" header="Plan Name" sortable filterField="plan_name">
-        <template #body="{ data }">
-          <div class="flex items-center space-x-2">
-            <img :src="data.icon_url" alt="data.plan_name" class="w-10 rounded-full" />
-            <div>
-              <b>{{ data.plan_name }}</b>
-              <p class="text-sm text-medium-grey">{{ data.subscription_name }}</p>
-            </div>
-          </div>
-        </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            @input="filterCallback()"
-            placeholder="Search by name"
-          />
-        </template>
-      </Column>
-
-      <Column
-        field="category_id"
-        header="Category"
-        filterField="category_id"
-        :showFilterMenu="false"
-      >
-        <template #body="{ data }">
+      <!-- Category Column -->
+      <template v-else-if="col.field === 'category'" #body="{ data }">
+        <Tag class="text-sm">
           {{ getCategoryName(data.category_id) }}
-        </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <Select
-            v-model="filterModel.value"
-            @change="filterCallback()"
-            :options="categories"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Select Category"
-            showClear
-          />
-        </template>
-      </Column>
+        </Tag>
+      </template>
 
-      <Column field="payment_date" header="Next Payment Date" sortable></Column>
+      <!-- Due Column -->
+      <template v-else-if="col.field === 'payment_date'" #body="{ data }">
+        <div>
+          <div class="text-sm">{{ formatPaymentDate(data.payment_date) }}</div>
+        </div>
+      </template>
 
-      <Column field="cost" header="Cost" sortable filterField="cost" :showFilterMenu="false">
-        <template #filter="{ filterModel, filterCallback }">
-          <div class="min-w-40 grid grid-flow-dense">
-            <div class="mb-5">
-              <Slider v-model="filterModel.value" @change="filterCallback()" range class="w-full" />
-            </div>
-            <div class="flex items-center justify-between px-2">
-              <InputNumber
-                v-model="filterModel.value[0]"
-                :min="0"
-                :max="filterModel.value[1]"
-                @input="filterCallback()"
-                fluid
-                class="w-[4rem]"
-              />
-              -
+      <!-- Cost/Period Column -->
+      <template v-else-if="col.field === 'cost'" #body="{ data }">
+        <div class="text-sm">
+          {{ '$' + data.cost }}
+          <span class="text-xs text-gray-500">
+            / {{ data.period ? data.period.toLowerCase() : 'month' }}
+          </span>
+        </div>
+      </template>
+
+      <!-- Usage Column -->
+      <template v-else-if="col.field === 'usage_score'" #body="{ data }">
+        <div @click="handleToggleUsage(data)" class="flex items-center space-x-2 cursor-pointer">
+          <div v-if="data.track_usage">
+            <span
+              class="text-xs font-bold text-white rounded-full px-2 py-1"
+              :style="{ backgroundColor: getUsageColor(data.usage_score) }"
+            >
+              {{ data.usage_score }}/10
+            </span>
+          </div>
+          <div v-else>
+            <span class="text-xs text-gray-500">Off</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- Actions Column -->
+      <template v-else-if="col.field === 'actions'" #body="{ data }">
+        <Button
+          @click="handleDelete(data.id)"
+          icon="pi pi-trash"
+          severity="danger"
+          rounded
+          outlined
+          aria-label="Delete plan"
+        />
+      </template>
+
+      <!-- Filter Template for Cost/Period Column -->
+      <template v-if="showFilters && col.field === 'cost'" #filter="{ filterModel }">
+        <div class="flex flex-col space-y-2 p-2">
+          <!-- Cost Range Filter -->
+          <div>
+            <label class="text-xs block mb-1">Cost Range:</label>
+            <Slider v-model="filterModel.value" range class="w-full" />
+            <div class="flex justify-between mt-1">
+              <InputNumber v-model="filterModel.value[0]" inputClass="w-16" :min="0" />
               <InputNumber
                 v-model="filterModel.value[1]"
+                inputClass="w-16"
                 :min="filterModel.value[0]"
-                :max="100"
-                @input="filterCallback()"
-                fluid
-                class="w-[4rem]"
+                :max="costMax"
               />
             </div>
           </div>
-        </template>
-      </Column>
+          <!-- Period Filter -->
+          <div>
+            <label class="text-xs block mb-1">Period:</label>
+            <Select
+              v-model="filters.period"
+              @change="handlePeriodChange"
+              :options="periodOptions"
+              optionLabel="label"
+              optionValue="value"
+            />
+          </div>
+        </div>
+      </template>
+    </Column>
 
-      <Column field="period" header="Period" filterField="period" :showFilterMenu="false">
-        <template #filter="{ filterModel, filterCallback }">
-          <Select
-            v-model="filterModel.value"
-            @change="filterCallback()"
-            :options="periodOptions"
-            placeholder="Select Period"
-            showClear
-          />
-        </template>
-      </Column>
-
-      <Column field="usage_score" header="Usage Score" sortable></Column>
-
-      <Column field="track_usage" header="Track Usage">
-        <template #body="{ data }">
-          <i
-            class="pi"
-            :class="{
-              'pi-check-circle text-green-500': data.track_usage,
-              'pi-times-circle text-red-400': !data.track_usage,
-            }"
-          ></i>
-        </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <Checkbox v-model="filterModel.value" binary @change="filterCallback()" />
-        </template>
-      </Column>
-
-      <Column header="Actions">
-        <template #body="{ data }">
-          <Button
-            @click="deleteUserPlan(data.id)"
-            icon="pi pi-times"
-            severity="danger"
-            rounded
-            variant="outlined"
-            aria-label="Cancel"
-          />
-        </template>
-      </Column>
-    </DataTable>
+    <!-- Empty State -->
+    <template #empty>
+      <div class="flex flex-col items-center justify-center py-6">
+        <i class="pi pi-inbox text-4xl text-gray-400" />
+        <p class="mt-2 text-gray-500">No plans found</p>
+      </div>
+    </template>
+  </DataTable>
 </template>

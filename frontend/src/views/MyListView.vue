@@ -1,12 +1,26 @@
 <script setup>
+import { onMounted } from 'vue'
+
 import UserPlanList from '@/components/UserPlanList.vue'
-import Card from 'primevue/card'
+import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
+
+const {
+  userPlans,
+  categories,
+  fetchUserPlans,
+  fetchCategories,
+} = useSubscriptionManager()
+
+onMounted(() => {
+  fetchUserPlans()
+  fetchCategories()
+})
 </script>
 
 <template>
   <Card class="w-full">
     <template #content>
-      <UserPlanList />
+      <UserPlanList :userPlans="userPlans" :categories="categories" @refresh="fetchUserPlans"/>
     </template>
   </Card>
 </template>

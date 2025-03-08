@@ -4,19 +4,11 @@ import axios from 'axios'
 
 import { useToast } from 'primevue/usetoast'
 
-import AutoComplete from 'primevue/autocomplete'
-import Select from 'primevue/select'
-import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import InputNumber from 'primevue/inputnumber'
-import Card from 'primevue/card'
-
 const toast = useToast()
 
 const subscriptions = ref([])
 const categories = ref([])
-const periodOptions = ref(['Day', 'Month', 'Quarter', 'Year'])
+const periodOptions = ref(['Day', 'Week', 'Month', 'Quarter', 'Year'])
 const filteredSubs = ref([])
 const showDialog = ref(false)
 
@@ -63,12 +55,15 @@ const addNewSubscription = async () => {
   }
 
   try {
+    console.log(newSubscription.value)
     const response = await axios.post('/api/subscriptions/', {
       name: newSubscription.value.name,
       category: newSubscription.value.category,
     })
+
     subscriptions.value.push(response.data)
     newPlan.value.subscription = response.data
+
     toast.add({
       severity: 'success',
       summary: 'Success',
@@ -160,10 +155,13 @@ const createPlan = async () => {
             <label class="mr-3">Cost</label>
             <InputNumber
               v-model="newPlan.cost"
+              placeholder="Enter plan cost"
               mode="currency"
               currency="CAD"
-              placeholder="Enter plan cost"
-              class="flex-grow text-right border-none dark:bg-dark md:dark:bg-dark-grey"
+              class="dark:bg-dark md:dark:bg-dark-grey"
+              :inputStyle="{ textAlign: 'right' }"
+              inputClass="!border-none"
+              fluid
             />
           </div>
 
@@ -217,9 +215,3 @@ const createPlan = async () => {
     </template>
   </Dialog>
 </template>
-
-<style scoped>
-.p-inputnumber {
-  text-align: right;
-}
-</style>

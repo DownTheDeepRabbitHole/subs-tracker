@@ -8,12 +8,6 @@ import Cookies from 'js-cookie'
 
 import { useToast } from 'primevue/usetoast'
 
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Checkbox from 'primevue/checkbox'
-import Card from 'primevue/card'
-
 const toast = useToast()
 
 const username = ref('')

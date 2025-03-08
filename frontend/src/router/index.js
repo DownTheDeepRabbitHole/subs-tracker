@@ -1,79 +1,87 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import RegisterView from '@/views/RegisterView.vue'
-import LoginView from '@/views/LoginView.vue'
-import SharedListView from '@/views/SharedListView.vue'
-import MyListView from '@/views/MyListView.vue'
-import AddPlanView from '@/views/AddPlanView.vue'
-import TestView from '@/views/TestView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
-      meta: {
-        requiresAuth: true,
-      },
+      component: () => import('@/layouts/MainLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('@/views/HomeView.vue'),
+          meta: { title: 'Home' },
+        },
+        {
+          path: 'shared-list',
+          name: 'shared list',
+          component: () => import('@/views/SharedListView.vue'),
+          meta: { title: 'Shared List' },
+        },
+        {
+          path: 'my-list',
+          name: 'my list',
+          component: () => import('@/views/MyListView.vue'),
+          meta: { title: 'My List' },
+        },
+        {
+          path: 'new-plan',
+          name: 'new plan',
+          component: () => import('@/views/AddPlanView.vue'),
+          meta: { title: 'New Plan' },
+        },
+        {
+          path: 'test',
+          name: 'test',
+          component: () => import('@/views/TestView.vue'),
+          meta: { title: 'Test' },
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('@/views/ProfileView.vue'),
+          meta: { title: 'My Profile' },
+        },
+        {
+          path: 'budget',
+          name: 'budget',
+          component: () => import('@/views/BudgetView.vue'),
+          meta: { title: 'My Budgets' },
+        },
+      ],
     },
+
     {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: RegisterView,
-    },
-    {
-      path: '/shared-list',
-      name: 'shared list',
-      component: SharedListView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/my-list',
-      name: 'my list',
-      component: MyListView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/new-plan',
-      name: 'new plan',
-      component: AddPlanView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/test',
-      name: 'test',
-      component: TestView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-      meta: {
-        requiresAuth: true,
-      },
+      path: '/',
+      component: () => import('@/layouts/PublicLayout.vue'),
+      children: [
+        {
+          path: 'login',
+          name: 'login',
+          component: () => import('@/views/LoginView.vue'),
+          meta: { title: 'Login' },
+        },
+        {
+          path: 'register',
+          name: 'register',
+          component: () => import('@/views/RegisterView.vue'),
+          meta: { title: 'Register' },
+        },
+        {
+          path: ':catchAll(.*)',
+          name: 'not-found',
+          component: () => import('@/views/NotFoundView.vue'),
+          meta: { title: 'Page Not Found' },
+        },
+      ],
     },
   ],
 })
 
 import { jwtDecode } from 'jwt-decode'
 import Cookies from 'js-cookie'
-import SettingsView from '@/views/SettingsView.vue'
 
 // From https://medium.com/@tahnyybelguith/authentication-and-authorization-implementation-with-vue-js-6afcbb821c85
 router.beforeEach((to, from, next) => {

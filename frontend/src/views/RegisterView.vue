@@ -7,12 +7,6 @@ import Cookies from 'js-cookie'
 
 import { useToast } from 'primevue/usetoast'
 
-import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-
 const toast = useToast()
 
 const form = reactive({

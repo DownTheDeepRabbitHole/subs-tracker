@@ -1,8 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
-import Chart from 'primevue/chart'
-import Card from 'primevue/card'
+
+import StatsCard from '@/components/StatsCard.vue'
+import ChartCard from '@/components/ChartCard.vue'
+import SpendingCard from '@/components/SpendingCard.vue'
 
 const spendingByCategoryChartData = ref({
   labels: [],
@@ -13,11 +15,13 @@ const spendingByCategoryChartData = ref({
     },
   ],
 })
+
 const spendingPerPeriod = ref({
   past_week: 0,
   past_month: 0,
   past_year: 0,
 })
+
 const usageByCategoryChartData = ref({
   labels: [],
   datasets: [
@@ -63,12 +67,21 @@ const fetchSpendingByCategory = async () => {
     // Update pie chart data
     spendingByCategoryChartData.value.labels = Object.keys(data)
     spendingByCategoryChartData.value.datasets[0].data = Object.values(data).map(
-      (category) => category.yearly,
+      (category) => category.year,
     )
   } catch (error) {
     console.error('Error fetching spending by category:', error)
   }
 }
+
+// Computed properties to check if the chart data is non-zero
+const hasSpendingByCategoryData = computed(() => {
+  return spendingByCategoryChartData.value.datasets[0].data.some((value) => value > 0)
+})
+
+const hasUsageByCategoryData = computed(() => {
+  return usageByCategoryChartData.value.datasets[0].data.some((value) => value > 0)
+})
 
 // Fetch data when the component is mounted
 onMounted(() => {
@@ -79,60 +92,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    <!-- Spending per Period (Big Numbers) -->
-    <div class="p-col-12 p-md-4">
-      <Card>
-        <template #content>
-          <h3>Weekly Spending</h3>
-          <h1 class="big-number">${{ spendingPerPeriod.past_week }}</h1>
-        </template>
-      </Card>
-    </div>
-    <div class="p-col-12 p-md-4">
-      <Card>
-        <template #content>
-          <h3>Monthly Spending</h3>
-          <h1 class="big-number">${{ spendingPerPeriod.past_month }}</h1>
-        </template>
-      </Card>
-    </div>
-    <div class="p-col-12 p-md-4">
-      <Card>
-      <template #content>
-          <h3>Yearly Spending</h3>
-          <h1 class="big-number">${{ spendingPerPeriod.past_year }}</h1>
-        </template>
-      </Card>
-    </div>
+  <div class="grid grid-flow-dense grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Spending Cards -->
+    <StatsCard title="Weekly Spending" :amount="spendingPerPeriod.past_week" />
+    <StatsCard title="Monthly Spending" :amount="spendingPerPeriod.past_month" />
+    <StatsCard title="Yearly Spending" :amount="spendingPerPeriod.past_year" />
 
-    <!-- Spending by Category (Pie Chart) -->
-    <div class="p-col-12 p-md-6">
-      <Card>
-      <template #content>
-          <h3>Spending by Category</h3>
-          <Chart type="doughnut" :data="spendingByCategoryChartData" />
-        </template>
-      </Card>
-    </div>
+    <!-- Conditional rendering for Spending by Category chart -->
+    <ChartCard
+      v-if="hasSpendingByCategoryData"
+      title="Spending by Category"
+      chartType="doughnut"
+      :chartData="spendingByCategoryChartData"
+    />
 
-    <!-- Usage by Category (Pie Chart) -->
-    <div class="p-col-12">
-      <Card>
-        <template #content>
-          <h3>Usage by Category</h3>
-          <Chart type="pie" :data="usageByCategoryChartData" />
-        </template>
-      </Card>
-    </div>
+    <!-- Conditional rendering for Usage by Category chart -->
+    <ChartCard
+      v-if="hasUsageByCategoryData"
+      title="Usage by Category"
+      chartType="pie"
+      :chartData="usageByCategoryChartData"
+    />
+
+    
   </div>
+  <SpendingCard/>
 </template>
-
-<style scoped>
-.big-number {
-  font-size: 3rem;
-  font-weight: bold;
-  color: #2c3e50;
-  margin: 1rem 0;
-}
-</style>
