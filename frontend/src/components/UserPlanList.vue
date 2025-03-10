@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { FilterMatchMode } from '@primevue/core/api'
 import { formatDistanceToNow } from 'date-fns'
 
 import { useSubscriptionManager } from '@/composables'
 
 const { deleteUserPlan, toggleUsage } = useSubscriptionManager()
+
+const router = useRouter()
 
 const periodOptions = [
   { label: 'Any', value: '' },
@@ -121,6 +124,10 @@ const handlePeriodChange = () => {
 const handleDelete = async (planId) => {
   await deleteUserPlan(planId)
   emit('refresh')
+}
+
+const handleEdit = (planId) => {
+  router.push({ name: 'edit plan', params: { planId } })
 }
 
 const handleToggleUsage = async (plan) => {
@@ -241,14 +248,22 @@ const handleToggleUsage = async (plan) => {
 
       <!-- Actions Column -->
       <template v-else-if="col.field === 'actions'" #body="{ data }">
-        <Button
-          @click="handleDelete(data.id)"
-          icon="pi pi-trash"
-          severity="danger"
-          rounded
-          outlined
-          aria-label="Delete plan"
-        />
+        <div class="flex items-center space-x-2">
+          <Button
+            @click="handleEdit(data.id)"
+            icon="pi pi-pencil"
+            severity="secondary"
+            class="w-8 h-8"
+            aria-label="Edit plan"
+          />
+          <Button
+            @click="handleDelete(data.id)"
+            icon="pi pi-trash"
+            severity="danger"
+            class="w-8 h-8"
+            aria-label="Delete plan"
+          />
+        </div>
       </template>
 
       <!-- Filter Template for Cost/Period Column -->

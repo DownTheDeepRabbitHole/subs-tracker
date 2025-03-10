@@ -120,9 +120,6 @@ const handleCreateSubscription = async () => {
 
 <template>
   <Card class="p-4">
-    <template #header>
-      <h2>{{ props.label }}</h2>
-    </template>
     <template #content>
       <!-- Subscription Field -->
       <FieldWrapper title="Subscription">
@@ -182,7 +179,7 @@ const handleCreateSubscription = async () => {
           mode="currency"
           currency="CAD"
           placeholder="Enter cost"
-          :disabled="disabledFields.includes('plan')"
+          :disabled="disabledFields.includes('plan') || form.plan.freeTrial"
           inputClass="!border-none text-right w-full"
           class="w-full"
         />

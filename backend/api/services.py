@@ -1,12 +1,9 @@
 from datetime import date, timedelta
-from typing import Dict, List, Tuple
 
 from decimal import Decimal
-from django.db.models import QuerySet, DecimalField, ExpressionWrapper, F, Avg
+from django.db.models import DecimalField, ExpressionWrapper, F, Avg
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-
-from .models import UserPlan
 
 
 class SpendingCalculator:
@@ -20,11 +17,11 @@ class SpendingCalculator:
         ("year", 365),
     ]
 
-    def __init__(self, user_plans: QuerySet[UserPlan]):
+    def __init__(self, user_plans):
         self.user_plans = user_plans.select_related("plan")
 
-    def calculate_spending(self, periods: List[Tuple[str, int]]) -> Dict[str, float]:
-        """Calculate spending for multiple time periods."""
+    def calculate_spending(self, periods):
+        """Calculates total spending over each of the time periods."""
         end_date = timezone.localdate()
         results = {}
 
@@ -35,14 +32,14 @@ class SpendingCalculator:
 
         return results
 
-    def calculate_custom_spending(self, days: int) -> float:
-        """Calculate spending for a custom time period."""
+    def calculate_custom_spending(self, days):
+        """Calculate spending over a custom time period (__ days)"""
         end_date = timezone.localdate()
         start_date = end_date - timedelta(days=days)
         return round(self._calculate_range_spending(start_date, end_date), 2)
 
-    def _calculate_range_spending(self, start_date: date, end_date: date) -> float:
-        """Core calculation logic for a single date range."""
+    def _calculate_range_spending(self, start_date, end_date):
+        """Calculates the spending within a range"""
         total = 0.0
 
         for user_plan in self.user_plans:
@@ -66,18 +63,14 @@ class SpendingCalculator:
 
         return total
 
-    def _adjust_payment_date(
-        self, current_date: date, end_date: date, period: int
-    ) -> date:
-        """Find the first payment date on or before the end date."""
+    def _adjust_payment_date(self, current_date, end_date, period):
+        """Find the first payment date <= end date"""
         days_over = (current_date - end_date).days
-        periods_over = (days_over + period - 1) // period  # Ceiling division
+        periods_over = (days_over + period - 1) // period # Rounds it essentially
         return current_date - timedelta(days=periods_over * period)
 
-    def _count_payments_in_range(
-        self, last_payment: date, start_date: date, period: int
-    ) -> int:
-        """Calculate number of payments between start_date and last_payment."""
+    def _count_payments_in_range(self, last_payment, start_date, period):
+        """Calculate number of payments between start_date and last_payment"""
         days_in_range = (last_payment - start_date).days
         if days_in_range < 0:
             return 0
@@ -87,12 +80,12 @@ class SpendingCalculator:
 class AverageSpendingCalculator:
     """Calculating average (normalized) spending statistics"""
 
-    def __init__(self, user_plans: QuerySet[UserPlan]):
+    def __init__(self, user_plans):
         self.queryset = user_plans.select_related("plan").only(
             "plan__cost", "plan__period"
         )
 
-    def calculate_averages(self, periods: List[Tuple[int, str]]) -> Dict[str, float]:
+    def calculate_averages(self, periods):
         """Calculate normalized averages for multiple periods"""
         results = {}
 

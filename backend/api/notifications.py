@@ -1,17 +1,16 @@
 import os
 import requests
-from dotenv import load_dotenv
+from dotenv import load_dotenv # Loads environment variables
 
-# Load environment variables
 load_dotenv()
 
-# Constants
 ONESIGNAL_API_KEY = os.getenv("ONESIGNAL_API_KEY")
 ONESIGNAL_APP_ID = os.getenv("ONESIGNAL_APP_ID")
 ONESIGNAL_API_URL = "https://api.onesignal.com"
 
 
 def check_user_subscription(user_id):
+    """ Checks if a user is resgistered and subscribed to notifications (via OneSignal external_id tag) """
     url = f"{ONESIGNAL_API_URL}/apps/{ONESIGNAL_APP_ID}/users/by/external_id/{user_id}"
     headers = {"Authorization": f"Basic {ONESIGNAL_API_KEY}"}
 
@@ -28,6 +27,8 @@ def check_user_subscription(user_id):
 
 
 def send_push_notification(title, message, *user_ids):
+    """ Sends targeted push notification to the list of subscribed users """
+
     # Filter valid (subscribed) user IDs
     valid_user_ids = [str(user_id) for user_id in user_ids if check_user_subscription(user_id)]
 

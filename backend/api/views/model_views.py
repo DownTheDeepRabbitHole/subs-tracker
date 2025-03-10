@@ -21,6 +21,7 @@ from ..serializers import *
 from datetime import date, timedelta
 import datetime
 
+
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 30
     page_size_query_param = "page_size"
@@ -41,7 +42,6 @@ class UserPlanView(viewsets.ModelViewSet):
         params = self._parse_and_validate_params(self.request.query_params)
         filters = self._build_filters(params, today)
 
-        # Apply base filters first
         queryset = queryset.filter(filters)
 
         # Annotate cost if period is specified
@@ -51,7 +51,7 @@ class UserPlanView(viewsets.ModelViewSet):
         # Apply cost filters
         queryset = self._apply_cost_filters(queryset, params)
 
-        # Custom ordering (handling dynamic 'cost' field)
+        # Order by params
         ordering = self._get_valid_ordering(params)
         if ordering:
             queryset = queryset.order_by(ordering)
@@ -62,39 +62,28 @@ class UserPlanView(viewsets.ModelViewSet):
 
     def _parse_and_validate_params(self, query_params):
         params = {}
-        self._parse_category(params, query_params)
-        self._parse_track_usage(params, query_params)
-        self._parse_period(params, query_params)
-        self._parse_cost_params(params, query_params)
-        self._parse_date_filters(params, query_params)
-        self._parse_ordering(params, query_params)
-        return params
 
-    def _parse_category(self, params, query_params):
         params["category_id"] = query_params.get("category_id")
 
-    def _parse_track_usage(self, params, query_params):
         if track_usage := query_params.get("track_usage"):
             if track_usage.lower() not in ["true", "false"]:
                 raise ValidationError("track_usage must be 'true' or 'false'")
             params["track_usage"] = track_usage.lower() == "true"
-
-    def _parse_period(self, params, query_params):
+        
         if period_str := query_params.get("period"):
             try:
                 params["period"] = Plan.Period.get_days(period_str)
             except ValueError as e:
                 raise ValidationError(str(e))
-
-    def _parse_cost_params(self, params, query_params):
+            
         for param in ["cost_min", "cost_max"]:
             if value := query_params.get(param):
                 try:
                     params[param] = Decimal(value)
                 except InvalidOperation:
                     raise ValidationError(f"{param} must be a decimal number")
+        
 
-    def _parse_date_filters(self, params, query_params):
         date_params = ["days_until_payment", "recently_paid"]
         for param in date_params:
             if value := query_params.get(param):
@@ -104,8 +93,8 @@ class UserPlanView(viewsets.ModelViewSet):
                         raise ValueError
                 except ValueError:
                     raise ValidationError(f"{param} must be a positive integer")
+        
 
-    def _parse_ordering(self, params, query_params):
         if ordering := query_params.get("ordering"):
             allowed_static_fields = {"payment_date", "plan__name", "track_usage"}
             ordering_field = ordering.lstrip("-")
@@ -117,30 +106,22 @@ class UserPlanView(viewsets.ModelViewSet):
                 raise ValidationError("Cannot order by 'cost' without a period parameter")
 
             params["ordering"] = ordering
+        return params
 
     def _build_filters(self, params, today):
+        # source: https://stackoverflow.com/questions/4523530/q-objects-and-the-operator-in-django
         filters = Q()
-        self._apply_category_filter(filters, params)
-        self._apply_track_usage_filter(filters, params)
-        self._apply_payment_date_filters(filters, params, today)
-        return filters
-
-    def _apply_category_filter(self, filters, params):
         if category_id := params.get("category_id"):
             filters &= Q(plan__subscription__category__id=category_id)
-
-    def _apply_track_usage_filter(self, filters, params):
         if track_usage := params.get("track_usage", None):
             filters &= Q(track_usage=track_usage)
-
-    def _apply_payment_date_filters(self, filters, params, today):
         if days := params.get("days_until_payment"):
             end_date = today + timedelta(days=days)
             filters &= Q(payment_date__range=[today, end_date])
-
         if days := params.get("recently_paid"):
             start_date = today - timedelta(days=days)
             filters &= Q(payment_date__range=[start_date, today])
+        return filters
 
     def _annotate_cost(self, queryset, target_period):
         return queryset.annotate(
@@ -164,7 +145,7 @@ class UserPlanView(viewsets.ModelViewSet):
             return None
 
         return ordering
-    
+
     def create(self, request):
         user = request.user
 
@@ -198,7 +179,8 @@ class UserPlanView(viewsets.ModelViewSet):
             serialized_data,
             status=status.HTTP_201_CREATED,
         )
-    
+
+
 class ToggleUsageView(APIView):
     def patch(self, request, pk):
         try:
@@ -227,6 +209,7 @@ class ToggleUsageView(APIView):
 
         return Response({"track_usage": user_plan.track_usage}, status=status.HTTP_200_OK)
 
+
 class SubscriptionView(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
@@ -247,6 +230,7 @@ class SubscriptionView(viewsets.ModelViewSet):
             filters &= Q(category__id=category_id)
 
         return queryset.filter(filters)
+
 
 class PlanView(viewsets.ModelViewSet):
     queryset = Plan.objects.all()

@@ -7,8 +7,8 @@ import requests
 
 def fetch_data(api_key, start_date, end_date):
     """
-    Fetch RescueTime summary data between start_date and end_date.
-    Dates should be formatted as YYYY-MM-DD.
+    Fetch RescueTime's summary data analytics from start_date and end_date.
+    Dates *should be* in YYYY-MM-DD form.
     """
     url = "https://www.rescuetime.com/anapi/data"
     params = {
@@ -41,7 +41,11 @@ def fetch_data(api_key, start_date, end_date):
         response.raise_for_status()
 
 def calculate_usage(subscription_name, df, threshold=300, window_size=7, trend_period=14, trend_threshold=0.8):
-    print(f"Subscription Name: {subscription_name}")
+    """
+    Grades a subscription's usage from 1 to 10 based on screentime data.
+    It analyzes usage patterns over time, including a moving average
+    for more stable results and compares with trends in historical data to detect if it's downward.
+    """
 
     if subscription_name not in df.columns:
         print(f"Warning: '{subscription_name}' not found in the data.")
@@ -56,7 +60,7 @@ def calculate_usage(subscription_name, df, threshold=300, window_size=7, trend_p
 
     # Get the most recent and older moving averages
     recent_ma = df[f"{subscription_name}_MA"].iloc[-1]  # Most recent moving average
-    older_ma = df[f"{subscription_name}_MA"].iloc[-trend_period]  # Moving average 'trend_period' days ago
+    older_ma = df[f"{subscription_name}_MA"].iloc[-trend_period]  # Moving average for trend_period days ago
 
     # Calculate the base score (0 to 10) based on the moving average and threshold
     if recent_ma >= threshold:
@@ -64,23 +68,23 @@ def calculate_usage(subscription_name, df, threshold=300, window_size=7, trend_p
     else:
         base_score = (recent_ma / threshold) * 10  # Normalize to 0-10
 
-    # Apply a penalty if the subscription is trending downward
+    # Reduce score if the subscription is trending downward
     if recent_ma < older_ma * trend_threshold:
-        penalty = (1 - (recent_ma / older_ma)) * 5  # Penalize up to 5 points
+        penalty = (1 - (recent_ma / older_ma)) * 5  # Deduct up to 5 points
         base_score -= penalty
 
-    # Ensure the score is between 1 and 10
+    # Final clipping between 1 and 10
     usage_score = max(1, min(10, round(base_score)))
     
     return usage_score
 
-def display_data(df):
+def display_data(df): # Maintenance function: Plots usage data for all subscriptions
     plt.plot(df)
     plt.show()
 
-def display_subscriptions(subscription_name, df):
+def display_subscriptions(subscription_name, df): # Maintenance function: Plots usage data for one subscription
     if subscription_name in df.columns:
-        # Create a new dataframe with only the relevant columns
+        # Use a dataframe with only subscription related column
         plot_df = df[[subscription_name, f"{subscription_name}_MA"]]
 
         # Plot the data
@@ -97,7 +101,7 @@ def display_subscriptions(subscription_name, df):
             linestyle="--",
         )
 
-        # Add labels, title, and legend
+        # Display title, legends, etc, etc.
         plt.title(f"Usage and Moving Average for {subscription_name}")
         plt.xlabel("Date")
         plt.ylabel("Time Spent (seconds)")

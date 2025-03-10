@@ -16,7 +16,7 @@ const MENU_ITEMS = [
   { label: 'Shared List', icon: 'pi pi-users', route: '/shared-list' },
   { label: 'My List', icon: 'pi pi-list', route: '/my-list' },
   { label: 'Budget', icon: 'pi pi-book', route: '/budget' },
-  { label: 'Add Plan', icon: 'pi pi-plus', route: '/new-plan' },
+  { label: 'Add Plan', icon: 'pi pi-plus', route: '/add-plan' },
 ]
 
 const router = useRouter()

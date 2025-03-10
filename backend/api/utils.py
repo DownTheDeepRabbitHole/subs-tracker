@@ -1,9 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
-from urllib.parse import (
-    quote,
-)  # https://stackoverflow.com/questions/21823965/use-20-instead-of-for-space-in-python-query-parameters
+from urllib.parse import quote  # https://stackoverflow.com/questions/21823965/use-20-instead-of-for-space-in-python-query-parameters
 
 # Load environment variables
 load_dotenv()
@@ -38,83 +36,37 @@ def get_icon_url(name):
     return DEFAULT_ICON_URL
 
 
-def knapsack_max_value(processed_plans, budget):
-    """
-    Compute maximum achievable usage score using top-down dynamic programming.
-    
-    Args:
-        processed_plans: Plans sorted by value density descending
-        budget: Total available budget in whole dollars
-        
-    Returns:
-        Tuple of (max_score, memoization_table)
-    """
-    memo = {}
-    
-    def dp(i: int, remaining: int) -> int:
-        """Recursive helper with memoization"""
-        if remaining < 0:
-            return -float('inf')
-        if i >= len(processed_plans) or remaining == 0:
-            return 0
-        if (i, remaining) in memo:
-            return memo[(i, remaining)]
-        
-        current = processed_plans[i]
-        exclude = dp(i + 1, remaining)
-        include = current['usage_score'] + dp(i + 1, remaining - current['scaled_cost'])
-        
-        memo[(i, remaining)] = max(exclude, include) if current['scaled_cost'] <= remaining else exclude
+def _knapsack(i, remaining, plans, memo):
+    """Recursive 01 knapsack, using 2d dictionary of tuples (pairs) as key to save memory (~O(W) vs O(WV))"""
+    if remaining < 0:
+        return -float('inf')
+    if i >= len(plans) or remaining == 0:
+        return 0
+    if (i, remaining) in memo:
         return memo[(i, remaining)]
-    
-    max_score = dp(0, budget)
-    return max_score, memo
 
-
-def backtrack_selected_items(processed_plans, budget, memo):
-    """
-    Reconstruct selected items from DP memoization table.
+    current = plans[i]
+    # Explore exclusion path
+    exclude = _knapsack(i + 1, remaining, plans, memo)
     
-    Args:
-        processed_plans: Plans sorted by value density descending
-        budget: Original budget used in DP
-        memo: Memoization table from knapsack_max_value
-        
-    Returns:
-        List of selected plan IDs in selection order
-    """
-    selected = []
-    remaining = budget
+    # Explore inclusion path
+    include = current['usage_score'] + _knapsack(
+        i + 1, remaining - current['scaled_cost'], plans, memo
+    )
     
-    for i, plan in enumerate(processed_plans):
-        cost = plan['scaled_cost']
-        if remaining < cost:
-            continue
-            
-        # Check if current plan was included
-        score_with = memo.get((i + 1, remaining - cost), 0) + plan['usage_score']
-        if memo.get((i, remaining), 0) == score_with:
-            selected.append(plan['id'])
-            remaining -= cost
-            
-    return selected
+    # Choose maximum value between the two and store in memo
+    max_val = max(exclude, include) if current['scaled_cost'] <= remaining else exclude
+    memo[(i, remaining)] = max_val
+    return max_val
 
 
 def budget_plans(user_plans, original_budget):
     """
-    Optimal subscription planner using 0/1 knapsack algorithm.
-    
-    Args:
-        user_plans: List of dictionaries with:
-            - id: Plan identifier
-            - usage_score: Non-negative integer value
-            - cost: Positive dollar amount
-        original_budget: Total available budget
-        
-    Returns:
-        List of selected plan IDs that maximize usage score
+    Finds optimat set of subscriptions to include w/in a given budget
+    Checks combinations of plan costs (weights) while maximizing usage score (value)
+    Returns list of plan ids included in the budget
     """
-    # Preprocess and sort plans
+    # Preprocess and sort plans by cost to usage score ratio (can prune suboptimal paths sooner), and rounds costs to use for memo
     processed = sorted(
         (
             {
@@ -128,9 +80,24 @@ def budget_plans(user_plans, original_budget):
         key=lambda x: (-x['value_density'], x['scaled_cost'])
     )
     
-    # Calculate optimal score and memoization table
+    # Initialize memoization table and solve (build memo table)
     budget = round(original_budget)
-    max_score, memo = knapsack_max_value(processed, budget)
+    memo = {}
+    max_score = _knapsack(0, budget, processed, memo)
     
-    # Reconstruct selected items
-    return backtrack_selected_items(processed, budget, memo)
+    # Backtracks through memo table to reconstruct optimal selections
+    selected = []
+    remaining_budget = budget
+    
+    for idx, plan in enumerate(processed):
+        cost = plan['scaled_cost']
+        if remaining_budget < cost:
+            continue
+            
+        # Check if current plan was included in optimal solution
+        with_current = memo.get((idx + 1, remaining_budget - cost), 0) + plan['usage_score']
+        if memo.get((idx, remaining_budget), 0) == with_current:
+            selected.append(plan['id'])
+            remaining_budget -= cost
+    
+    return selected

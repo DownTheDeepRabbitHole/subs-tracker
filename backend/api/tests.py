@@ -1,3 +1,3 @@
 from django.test import TestCase
 
-# Create your tests here.
+# Removed tests due to the file size.

@@ -118,29 +118,15 @@ export function useSubscriptionManager() {
     }
   }
 
-  const setBudget = async (budget, categoryId = null) => {
-    if (!budget) {
-      showToast('error', 'Error', 'Please enter a budget.')
-      return null
-    }
-
+  const deletePlan = async (planId) => {
     try {
-      const response = await axios.get('/api/analytics/set-budget/', {
-        params: {
-          budget: budget,
-          ...(categoryId && { category_id: categoryId }),
-        },
-      })
-
-      const categoryText = categoryId
-        ? `for ${categories.value.find((c) => c.id === categoryId)?.name || 'selected category'}`
-        : ''
-
-      showToast('success', 'Budget Applied', `Budget of $${budget} has been set ${categoryText}`)
-      return response.data.subscriptions
+      await axios.delete(`/api/plans/${planId}/`)
+      await fetchSubscriptions()
+      showToast('success', 'Plan removed', 'The plan was successfully deleted')
+      return true
     } catch (error) {
-      handleError('Error setting budget', error)
-      return null
+      handleError('Error deleting plan', error)
+      return false
     }
   }
 
@@ -276,7 +262,7 @@ export function useSubscriptionManager() {
     updatePlan,
     updateUserPlan,
     addToUserPlans,
-    setBudget,
+    deletePlan,
     createPlan,
     createSubscription,
     getCategoryName,

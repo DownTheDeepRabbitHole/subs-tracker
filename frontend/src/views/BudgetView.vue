@@ -2,16 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
-import { useSubscriptionManager } from '@/composables'
-
-import { useToast } from 'primevue'
+import { useSubscriptionManager, useHelpers } from '@/composables'
 
 import UserPlanList from '@/components/UserPlanList.vue'
 import UserPlanCard from '@/components/UserPlanCard.vue'
 import CardWrapper from '@/components/CardWrapper.vue'
 
 const { categories, fetchCategories } = useSubscriptionManager()
-const toast = useToast()
+const { showToast, handleError } = useHelpers()
 
 const selectedCategory = ref(null)
 const budgetInput = ref('')
@@ -30,7 +28,7 @@ const toggleUserPlanList = () => {
 
 const handleSetBudget = async () => {
   if (!budgetInput.value) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a budget.', life: 3000 })
+    showToast('error', 'Error', 'Please enter a budget.')
     return
   }
   try {
@@ -43,23 +41,13 @@ const handleSetBudget = async () => {
     })
     includedUserPlans.value = response.data.included_plans
     excludedUserPlans.value = response.data.excluded_plans
+    console.log(response.data)
     budgetApplied.value = true
 
     const categoryText = selectedCategory.value ? `for ${selectedCategory.value.name}` : ''
-    toast.add({
-      severity: 'success',
-      summary: 'Budget Applied',
-      detail: `Budget of $${budgetInput.value} has been set ${categoryText}`,
-      life: 3000,
-    })
+    showToast('success', 'Budget Applied', `Budget of $${budgetInput.value} has been set ${categoryText}`)
   } catch (error) {
-    console.error('Error setting budget:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.error || 'Failed to apply budget',
-      life: 3000,
-    })
+    handleError('Error setting budget', error)
   }
 }
 
@@ -91,7 +79,7 @@ onMounted(() => {
 
     <div v-if="showUserPlanList" class="mt-6">
       <h2>Budgeted subscriptions</h2>
-      <UserPlanList :userPlanList="includedUserPlans" :showFilters="false" />
+      <UserPlanList :userPlans="includedUserPlans" :showFilters="false" />
     </div>
 
     <div class="flex justify-center mt-4">

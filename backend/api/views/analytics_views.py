@@ -6,13 +6,9 @@ from rest_framework.exceptions import ValidationError
 from django.db.models import (
     Q,
     F,
-    Sum,
     ExpressionWrapper,
     FloatField,
-    DecimalField,
 )
-from django.db.models.functions import Cast, Coalesce
-from decimal import Decimal
 
 from ..models import Plan, UserPlan
 from ..serializers import UserPlanSerializer
@@ -29,7 +25,7 @@ class AverageSpendingPerPeriod(APIView):
         user = request.user
 
         try:
-            # Validate and parse parameters
+            # Validates/get params
             serializer = PeriodQueryParamSerializer(data=request.query_params)
             serializer.is_valid(raise_exception=True)
             period_param = serializer.validated_data.get("period", None)
@@ -154,6 +150,7 @@ class UsageByCategory(APIView):
         return Response(usage_by_category, status=status.HTTP_200_OK)
 
 
+# Structure (function based views) according to source: https://spookylukey.github.io/django-views-the-right-way/delegation.html
 class SetBudgetView(APIView):
     def get(self, request):
         try:

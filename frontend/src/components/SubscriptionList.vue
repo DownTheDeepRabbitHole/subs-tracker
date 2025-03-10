@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useSubscriptionManager } from '@/composables'
+import { useRouter } from 'vue-router'
 
 const {
   subscriptions,
@@ -9,8 +10,11 @@ const {
   fetchCategories,
   addToUserPlans,
   getCategoryName,
-  showToast
+  showToast,
+  deletePlan,
 } = useSubscriptionManager()
+
+const router = useRouter()
 
 const layout = ref('grid')
 const options = ref(['list', 'grid'])
@@ -37,21 +41,41 @@ const handleAddToUserPlans = async () => {
     showToast('error', 'Error', 'Please select a next payment date')
     return
   }
-
   const success = await addToUserPlans(selectedPlan.value.id, nextPaymentDate.value)
-  
   if (success) {
+    showToast('success', 'Success', 'Plan added to your list.')
     showDateDialog.value = false
     nextPaymentDate.value = null
     selectedPlan.value = null
   }
 }
 
-// Filter and sort subscriptions (computed to make reactive)
+// Navigate to edit view
+const handleEditPlanClick = (plan) => {
+  router.push({ name: 'edit plan', params: { planId: plan.id } })
+}
+
+// Delete plan with confirmation
+const handleDeletePlanClick = async (plan) => {
+  const confirmed = confirm(`Are you sure you want to delete "${plan.name}"?`)
+  if (!confirmed) return
+  try {
+    const success = await deletePlan(plan.id)
+    if (success) {
+      showToast('success', 'Success', 'Plan deleted.')
+    } else {
+      showToast('error', 'Error', 'Failed to delete plan.')
+    }
+  } catch (error) {
+    console.error('Error deleting plan:', error)
+    showToast('error', 'Error', 'Failed to delete plan.')
+  }
+}
+
+// Computed filtered and sorted subscriptions
 const filteredSubscriptions = computed(() => {
   let subs = subscriptions.value || []
 
-  // Filter subscriptions based on search query
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     subs = subs.filter((sub) => {
@@ -63,11 +87,9 @@ const filteredSubscriptions = computed(() => {
     })
   }
 
-  // Sorting logic based on selected sort option
   if (sortKey.value) {
     const value = sortKey.value.value
     if (value === 'name') {
-      // First sort list by subscriptions that have plans, then those without (https://stackoverflow.com/questions/28560801/javascript-sorting-array-by-multiple-criteria)
       subs = subs.slice().sort((a, b) => {
         const aHasPlans = a.plans && a.plans.length > 0
         const bHasPlans = b.plans && b.plans.length > 0
@@ -77,17 +99,12 @@ const filteredSubscriptions = computed(() => {
         return a.name.localeCompare(b.name)
       })
     } else if (value === '!plans') {
-      // Sort by plan count: high to low
-      subs = subs
-        .slice()
-        .sort((a, b) => (b.plans ? b.plans.length : 0) - (a.plans ? a.plans.length : 0))
+      subs = subs.slice().sort((a, b) => (b.plans ? b.plans.length : 0) - (a.plans ? a.plans.length : 0))
     } else if (value === 'plans') {
-      // Sort by plan count: low to high
-      subs = subs
-        .slice()
-        .sort((a, b) => (a.plans ? a.plans.length : 0) - (b.plans ? b.plans.length : 0))
+      subs = subs.slice().sort((a, b) => (a.plans ? a.plans.length : 0) - (b.plans ? b.plans.length : 0))
     }
   }
+
   return subs
 })
 
@@ -103,7 +120,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DataView :value="filteredSubscriptions" paginator :rows="8" :layout="layout" >
+  <DataView :value="filteredSubscriptions" paginator :rows="8" :layout="layout">
     <template #header>
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
         <div class="flex items-center gap-4">
@@ -135,11 +152,12 @@ onMounted(() => {
       </div>
     </template>
 
+    <!-- List Layout -->
     <template #list="slotProps">
       <div
         v-for="(item, index) in slotProps.items"
         :key="index"
-        class="border-b last:border-b-0 border-gray-500 hover:bg-gray-50 transition-colors"
+        class="border-b last:border-b-0 border-gray-300 hover:bg-gray-50 transition-colors"
       >
         <div class="p-4">
           <div class="flex items-center gap-4">
@@ -161,11 +179,20 @@ onMounted(() => {
                   (${{ plan.cost }} / {{ plan.period }})
                 </span>
               </div>
-              <div>
-                <span class="font-medium text-primary-500">Add</span>
+              <div class="flex items-center space-x-2">
+                <Button
+                  icon="pi pi-pencil"
+                  class="p-button-text text-blue-500 hover:text-blue-700 !w-8 !h-8"
+                  @click="handleEditPlanClick(plan)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  class="p-button-text text-red-500 hover:text-red-700 !w-8 !h-8"
+                  @click="handleDeletePlanClick(plan)"
+                />
                 <Button
                   icon="pi pi-plus"
-                  class="p-button-text text-primary-500 hover:text-primary !w-8 !h-8 ml-5"
+                  class="p-button-text text-primary-500 hover:text-primary !w-8 !h-8"
                   @click="openDateDialog(plan)"
                 />
               </div>
@@ -175,12 +202,13 @@ onMounted(() => {
       </div>
     </template>
 
+    <!-- Grid Layout -->
     <template #grid="slotProps">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <div
           v-for="(item, index) in slotProps.items"
           :key="index"
-          class="bg-white rounded-lg border border-gray-400 hover:border-gray-300 transition-all hover:shadow-sm"
+          class="bg-white rounded-lg border border-gray-300 hover:border-gray-400 transition-all hover:shadow-sm"
         >
           <div class="p-4">
             <div class="flex items-center gap-3 mb-4">
@@ -200,11 +228,23 @@ onMounted(() => {
                   <span class="font-medium text-gray-900 block">{{ plan.name }}</span>
                   <span class="text-sm text-gray-500"> ${{ plan.cost }} / {{ plan.period }} </span>
                 </div>
-                <Button
-                  icon="pi pi-plus"
-                  class="p-button-text text-gray-400 hover:text-primary !w-8 !h-8"
-                  @click="openDateDialog(plan)"
-                />
+                <div class="flex items-center space-x-2">
+                  <Button
+                    icon="pi pi-pencil"
+                    class="p-button-text text-blue-500 hover:text-blue-700 !w-8 !h-8"
+                    @click="handleEditPlanClick(plan)"
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    class="p-button-text text-red-500 hover:text-red-700 !w-8 !h-8"
+                    @click="handleDeletePlanClick(plan)"
+                  />
+                  <Button
+                    icon="pi pi-plus"
+                    class="p-button-text text-gray-400 hover:text-primary !w-8 !h-8"
+                    @click="openDateDialog(plan)"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -225,7 +265,6 @@ onMounted(() => {
       <h3 class="text-lg font-semibold text-gray-900 mb-4">Select next payment date</h3>
       <DatePicker v-model="nextPaymentDate" :minDate="today" dateFormat="yy-mm-dd" inline />
     </div>
-
     <template #footer>
       <div class="flex justify-end gap-2">
         <Button

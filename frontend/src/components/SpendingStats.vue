@@ -161,7 +161,7 @@ function buildChart() {
 
       <!-- Right column: Bar Chart -->
       <div class="flex-1">
-        <apexchart type="bar" height="200" :options="apexOptions" :series="apexSeries" />
+        <apexchart v-if="apexOptions && apexSeries.length" type="bar" height="200" :options="apexOptions" :series="apexSeries" />
       </div>
     </div>
   </CardWrapper>

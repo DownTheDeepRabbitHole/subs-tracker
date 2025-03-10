@@ -23,19 +23,22 @@ const routes = [
         meta: { title: 'My List' },
       },
       {
-        path: 'new-plan/:type?/:id?',
-        name: 'new plan',
+        path: 'add-plan/',
+        name: 'add plan',
         component: () => import('@/views/AddPlanView.vue'),
-        meta: { title: 'New Plan' },
-        props: (route) => {
-          const params = {}
-          if (route.params.type === 'sub' && route.params.id) {
-            params.subscriptionId = route.params.id
-          } else if (route.params.type === 'plan' && route.params.id) {
-            params.planId = route.params.id
-          }
-          return params
-        },
+        meta: { title: 'Add Plan' },
+      },
+      {
+        path: 'edit-plan/:planId',
+        name: 'edit plan',
+        component: () => import('@/views/EditPlanView.vue'),
+        meta: { title: 'Edit Plan' },
+      },
+      {
+        path: 'edit-user-plan/:userPlanId',
+        name: 'edit user plan',
+        component: () => import('@/views/EditUserPlanView.vue'),
+        meta: { title: 'Edit Plan' },
       },
       {
         path: 'test',
