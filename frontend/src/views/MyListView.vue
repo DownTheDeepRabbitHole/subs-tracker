@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 
 import UserPlanList from '@/components/UserPlanList.vue'
-import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
+import { useSubscriptionManager } from '@/composables'
 
 const {
   userPlans,

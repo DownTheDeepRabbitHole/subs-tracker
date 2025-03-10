@@ -1,5 +1,36 @@
 @import 'tailwindcss';
 
 h1 {
-  @apply text-4xl font-semibold;
+  font-size: 2.25rem;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a5568;
+}
+
+h4 {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.p-button {
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease !important;
+}
+
+.p-button:not(.p-disabled):hover {
+  transform: translateX(2px);
 }

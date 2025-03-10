@@ -2,7 +2,11 @@
 import { computed } from 'vue'
 import axios from 'axios'
 
+import { useSubscriptionManager } from '@/composables'
+
 import { formatDistanceToNow } from 'date-fns'
+
+const { deleteUserPlan, toggleUsage } = useSubscriptionManager()
 
 const props = defineProps({
   userPlan: {
@@ -14,7 +18,6 @@ const props = defineProps({
 
 const emit = defineEmits(['refresh'])
 
-// Computed properties
 const formattedPeriod = computed(() => {
   return props.userPlan.period.charAt(0).toUpperCase() + props.userPlan.period.slice(1)
 })
@@ -43,31 +46,21 @@ const usageColor = computed(() => {
   return 'bg-green-500'
 })
 
-const deleteUserPlan = async () => {
-  try {
-    await axios.delete(`/api/user-plans/${props.userPlan['id']}/`)
-    emit('refresh')
-  } catch (error) {
-    console.error('Error deleting user plan:', error)
-  }
+const handleDeleteUserPlan = async () => {
+  await deleteUserPlan(props.userPlan['id'])
+  emit('refresh')
 }
 
-const toggleUsage = async () => {
-  try {
-    await axios.patch(`/api/user-plans/${props.userPlan['id']}/toggle-usage/`, {
-      track_usage: !props.userPlan['track_usage'],
-    })
-    emit('refresh')
-  } catch (error) {
-    console.error('Error toggling track usage:', error)
-  }
+const handleToggleUsage = async () => {
+  await toggleUsage(props.userPlan['id'], props.userPlan['track_usage'])
+  props.userPlan['track_usage'] = !props.userPlan['track_usage']
 }
 </script>
 
 <template>
   <Card class="hover:shadow-lg transition-shadow duration-200">
     <template #header>
-      <div class="flex items-center gap-4 p-4 border-b">
+      <div class="flex items-center gap-4 p-4 border-b border-gray-300">
         <img
           :src="userPlan.icon_url"
           :alt="userPlan.subscription_name"
@@ -122,13 +115,13 @@ const toggleUsage = async () => {
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2 p-4 border-t">
+      <div class="flex justify-end gap-2 p-4 border-t border-gray-300">
         <Button
           icon="pi pi-trash"
           severity="danger"
           outlined
           rounded
-          @click="deleteUserPlan"
+          @click="handleDeleteUserPlan"
           aria-label="Delete plan"
         />
         <Button
@@ -136,28 +129,10 @@ const toggleUsage = async () => {
           :severity="userPlan.track_usage ? 'success' : 'secondary'"
           outlined
           rounded
-          @click="toggleUsage"
+          @click="handleToggleUsage"
           :aria-label="`${userPlan.track_usage ? 'Disable' : 'Enable'} usage tracking`"
         />
       </div>
     </template>
   </Card>
 </template>
-
-<!-- <style scoped>
-.plan-card {
-  @apply bg-white rounded-xl border border-gray-200;
-}
-
-:deep(.p-card-header) {
-  @apply border-b border-gray-200;
-}
-
-:deep(.p-card-content) {
-  @apply p-0;
-}
-
-:deep(.p-card-footer) {
-  @apply border-t border-gray-200 p-0;
-} -->
-<!-- </style> -->

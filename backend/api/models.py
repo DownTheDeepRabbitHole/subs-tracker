@@ -45,6 +45,7 @@ class Subscription(models.Model):
         self.icon_url = utils.get_icon_url(self.name)
         super().save(*args, **kwargs)
 
+
 class Plan(models.Model):
     class Period(models.IntegerChoices):
         DAY = 1, "day"
@@ -59,14 +60,18 @@ class Plan(models.Model):
             for value, label in cls.choices:
                 if label.lower() == period_str:
                     return value
-            raise ValueError(f"Invalid period string: {period_str}. Valid options: {[label for _, label in cls.choices]}")
-        
+            raise ValueError(
+                f"Invalid period string: {period_str}. Valid options: {[label for _, label in cls.choices]}"
+            )
+
         @classmethod
         def get_label(cls, days):
             for value, label in cls.choices:
                 if value == days:
                     return label
-            raise ValueError(f"Invalid period value: {days}. Valid options: {[value for value, _ in cls.choices]}")
+            raise ValueError(
+                f"Invalid period value: {days}. Valid options: {[value for value, _ in cls.choices]}"
+            )
 
     subscription = models.ForeignKey(
         Subscription, on_delete=models.CASCADE, related_name="plans"
@@ -84,7 +89,7 @@ class Plan(models.Model):
 
 
 class UserPlan(models.Model):
-    USAGE_SCORE_CHOICES = [(i, i) for i in range(1, 11)]
+    USAGE_SCORE_CHOICES = [(i, i) for i in range(0, 11)]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_plans")
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
@@ -92,6 +97,7 @@ class UserPlan(models.Model):
     payment_date = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
     total_spent = models.IntegerField(default=0)
+    
     track_usage = models.BooleanField(default=False)
     usage_score = models.IntegerField(default=1, choices=USAGE_SCORE_CHOICES)
     average_usage = models.IntegerField(default=0)
@@ -118,3 +124,6 @@ class UserPlan(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s {self.plan.subscription.name} - {self.plan.name}"
+    
+    class Meta:
+        ordering = ['plan__name']

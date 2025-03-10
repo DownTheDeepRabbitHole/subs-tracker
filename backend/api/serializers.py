@@ -40,46 +40,66 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 
 class UserPlanSerializer(serializers.ModelSerializer):
+    plan = serializers.PrimaryKeyRelatedField(queryset=Plan.objects.all())
+
     class Meta:
         model = UserPlan
         fields = "__all__"
+        read_only_fields = ('user',)
 
-    def get_cost(self, instance):
-        # Check if cost is annotated (normalized in views)
-        annotated_cost = getattr(instance, 'cost', None)
-        if annotated_cost is not None:
-            return annotated_cost
-        else:
-            return instance.plan.cost
+    def validate(self, data):
+        user = self.context['request'].user
+        plan = data.get('plan')
+        if UserPlan.objects.filter(user=user, plan=plan).exists():
+            raise serializers.ValidationError({"plan": "Plan already added to your subscriptions."})
+        return data
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
 
+        # Handle annotated cost from view calculations
         annotated_cost = getattr(instance, "cost", None)
+        representation["cost"] = annotated_cost if annotated_cost is not None else instance.plan.cost
 
-        if annotated_cost is not None:
-            representation["cost"] = annotated_cost
-        else:
-            plan = instance.plan
-            representation["cost"] = plan.cost
-
+        # Add plan-related information
         plan = instance.plan
+        representation.update({
+            "plan_id": plan.id,
+            "plan_name": plan.name,
+            "period": plan.get_period_display(),
+            "free_trial": plan.free_trial
+        })
+
+        # Add subscription details
         subscription = plan.subscription
+        representation.update({
+            "subscription_id": subscription.id,
+            "subscription_name": subscription.name,
+            "category_id": subscription.category.id,
+            "icon_url": subscription.icon_url
+        })
 
-        representation["plan_name"] = plan.name
-        representation["period"] = plan.get_period_display()
-        representation["free_trial"] = plan.free_trial
-
-        representation["subscription_name"] = subscription.name
-        representation["category_id"] = subscription.category.id
-        representation["icon_url"] = subscription.icon_url
-
+        # Format user information
         representation["user"] = instance.user.username
-        representation["payment_date"] = instance.payment_date
-        representation["last_updated"] = instance.last_updated
-        representation["total_spent"] = instance.total_spent
-        representation["track_usage"] = instance.track_usage
-        representation["usage_score"] = instance.usage_score
-        representation["average_usage"] = instance.average_usage
 
         return representation
+
+class PeriodQueryParamSerializer(serializers.Serializer):
+    period = serializers.CharField(required=False)
+
+    def validate_period(self, value):
+        """Validate the period query parameter."""
+        if value:
+            try:
+                period_days = Plan.Period.get_days(value)
+                return period_days  # Return validated period
+            except ValueError:
+                valid_periods = [label for _, label in Plan.Period.choices]
+                raise serializers.ValidationError(
+                    f"Invalid period '{value}'. Valid options: {valid_periods}"
+                )
+        return None

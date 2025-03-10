@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
+import { useSubscriptionManager } from '@/composables'
 
 const {
   subscriptions,
   categories,
   fetchSubscriptions,
   fetchCategories,
-  addToUserPlans: addPlanToUserList,
+  addToUserPlans,
   getCategoryName,
   showToast
 } = useSubscriptionManager()
@@ -32,14 +32,13 @@ const onSortChange = (event) => {
   sortKey.value = event.value
 }
 
-// Add plan to user list using the composable
 const handleAddToUserPlans = async () => {
   if (!nextPaymentDate.value) {
     showToast('error', 'Error', 'Please select a next payment date')
     return
   }
 
-  const success = await addPlanToUserList(selectedPlan.value.id, nextPaymentDate.value)
+  const success = await addToUserPlans(selectedPlan.value.id, nextPaymentDate.value)
   
   if (success) {
     showDateDialog.value = false
@@ -48,7 +47,7 @@ const handleAddToUserPlans = async () => {
   }
 }
 
-// Computed property to filter and sort subscriptions
+// Filter and sort subscriptions (computed to make reactive)
 const filteredSubscriptions = computed(() => {
   let subs = subscriptions.value || []
 
@@ -68,7 +67,7 @@ const filteredSubscriptions = computed(() => {
   if (sortKey.value) {
     const value = sortKey.value.value
     if (value === 'name') {
-      // First sort list by subscriptions that have plans, then those without
+      // First sort list by subscriptions that have plans, then those without (https://stackoverflow.com/questions/28560801/javascript-sorting-array-by-multiple-criteria)
       subs = subs.slice().sort((a, b) => {
         const aHasPlans = a.plans && a.plans.length > 0
         const bHasPlans = b.plans && b.plans.length > 0
@@ -92,13 +91,11 @@ const filteredSubscriptions = computed(() => {
   return subs
 })
 
-// Open dialog to select next payment date for a plan
 const openDateDialog = (plan) => {
   selectedPlan.value = plan
   showDateDialog.value = true
 }
 
-// Fetch initial data on component mount
 onMounted(() => {
   fetchCategories()
   fetchSubscriptions()
@@ -142,7 +139,7 @@ onMounted(() => {
       <div
         v-for="(item, index) in slotProps.items"
         :key="index"
-        class="border-b last:border-b-0 bg-white hover:bg-gray-50 transition-colors"
+        class="border-b last:border-b-0 border-gray-500 hover:bg-gray-50 transition-colors"
       >
         <div class="p-4">
           <div class="flex items-center gap-4">
@@ -183,7 +180,7 @@ onMounted(() => {
         <div
           v-for="(item, index) in slotProps.items"
           :key="index"
-          class="bg-white rounded-lg border hover:border-gray-300 transition-all hover:shadow-sm"
+          class="bg-white rounded-lg border border-gray-400 hover:border-gray-300 transition-all hover:shadow-sm"
         >
           <div class="p-4">
             <div class="flex items-center gap-3 mb-4">

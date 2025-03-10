@@ -1,10 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-
 import { FilterMatchMode } from '@primevue/core/api'
 import { formatDistanceToNow } from 'date-fns'
 
-import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
+import { useSubscriptionManager } from '@/composables'
 
 const { deleteUserPlan, toggleUsage } = useSubscriptionManager()
 
@@ -33,7 +32,7 @@ const props = defineProps({
   },
   categories: {
     type: Array,
-    required: true,
+    required: false,
     default: () => [],
   },
   fields: {
@@ -46,8 +45,19 @@ const props = defineProps({
     required: false,
     default: true,
   },
+  showHeaders: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
+  paginator: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
 })
 
+// Chooses which columns to display from the fields prop
 const visibleColumns = computed(() => {
   return props.fields.map((field) => columns[field]).filter((col) => col !== undefined)
 })
@@ -60,12 +70,14 @@ const initFilters = () => {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     category_id: { value: null, matchMode: FilterMatchMode.EQUALS },
     cost: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
-    period: '',
+    period: { value: '', matchMode: FilterMatchMode.EQUALS },
+    track_usage: { value: null, matchMode: FilterMatchMode.EQUALS },
+    payment_date: { value: null, matchMode: FilterMatchMode.BETWEEN },
   }
 }
 initFilters()
 
-// Compute the maximum cost from user plans
+// Computes the maximum cost from user plans for cost range slider
 const costMax = computed(() => {
   if (props.userPlans.length) {
     return Math.max(...props.userPlans.map((plan) => plan.cost))
@@ -90,7 +102,7 @@ const formatPaymentDate = (date) => {
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }
 
-// Compute a color for usage score (0:red, 10:green).
+// Compute a color for usage score (0: red, 10: green)
 const getUsageColor = (score) => {
   const green = Math.floor((score / 10) * 255)
   const red = 255 - green
@@ -102,8 +114,8 @@ const clearFilter = () => {
 }
 
 const handlePeriodChange = () => {
-  console.log('New period:', filters.value.period)
-  emit('refresh', { period: filters.value.period })
+  console.log('New period:', filters.value.period.value)
+  emit('refresh', { period: filters.value.period.value })
 }
 
 const handleDelete = async (planId) => {
@@ -117,25 +129,10 @@ const handleToggleUsage = async (plan) => {
 }
 </script>
 
-<style scoped>
-/* Adjust text sizing for compact cells */
-.text-xs {
-  line-height: 1.2;
-}
-
-/* Example responsive adjustments */
-@media (min-width: 640px) {
-  .column-cell {
-    padding: 0.5rem !important;
-  }
-}
-</style>
-
 <template>
   <DataTable
     v-model:filters="filters"
     :value="userPlans"
-    paginator
     :rows="10"
     :rowsPerPageOptions="[10, 20, 50]"
     dataKey="id"
@@ -143,8 +140,10 @@ const handleToggleUsage = async (plan) => {
     :globalFilterFields="['subscription_name', 'plan_name']"
     removableSort
     class="sm:p-datatable-sm mx-auto w-full"
+    :showHeaders="showHeaders"
+    :paginator="paginator"
   >
-    <!-- Header with Global Search and Clear Filters Button -->
+    <!-- Header with Global Search and "Clear Filters" button -->
     <template #header v-if="showFilters">
       <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
         <div class="w-full sm:w-1/3">
@@ -176,6 +175,13 @@ const handleToggleUsage = async (plan) => {
       :field="col.field"
       :header="col.header"
       :sortable="showFilters && col.sortable"
+      :filterField="
+        col.field === 'category'
+          ? 'category_id'
+          : col.field === 'usage_score'
+            ? 'track_usage'
+            : col.field
+      "
       :showFilterMatchModes="false"
       class="column-cell"
     >
@@ -201,11 +207,9 @@ const handleToggleUsage = async (plan) => {
         </Tag>
       </template>
 
-      <!-- Due Column -->
+      <!-- Payment Date Column -->
       <template v-else-if="col.field === 'payment_date'" #body="{ data }">
-        <div>
-          <div class="text-sm">{{ formatPaymentDate(data.payment_date) }}</div>
-        </div>
+        <div class="text-sm">{{ formatPaymentDate(data.payment_date) }}</div>
       </template>
 
       <!-- Cost/Period Column -->
@@ -268,13 +272,62 @@ const handleToggleUsage = async (plan) => {
           <div>
             <label class="text-xs block mb-1">Period:</label>
             <Select
-              v-model="filters.period"
+              v-model="filters.period.value"
               @change="handlePeriodChange"
               :options="periodOptions"
               optionLabel="label"
               optionValue="value"
             />
           </div>
+        </div>
+      </template>
+
+      <!-- Filter Category -->
+      <template v-if="showFilters && col.field === 'category'" #filter="{ filterModel }">
+        <div class="p-2">
+          <label class="text-xs block mb-1">Category:</label>
+          <Select
+            v-model="filterModel.value"
+            :options="categories"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Select Category"
+            class="w-full"
+            showClear
+          />
+        </div>
+      </template>
+
+      <!-- Filter Payment Date -->
+      <template v-if="showFilters && col.field === 'payment_date'" #filter="{ filterModel }">
+        <div class="p-2">
+          <label class="text-xs block mb-1">Due Date Range:</label>
+          <DatePicker
+            v-model="filterModel.value"
+            selectionMode="range"
+            dateFormat="yy-mm-dd"
+            inline
+            class="w-full"
+          />
+        </div>
+      </template>
+
+      <!-- Filter Usage Column -->
+      <template v-if="showFilters && col.field === 'usage_score'" #filter="{ filterModel }">
+        <div class="p-2">
+          <label class="text-xs block mb-1">Usage:</label>
+          <Select
+            v-model="filterModel.value"
+            :options="[
+              { label: 'Any', value: null },
+              { label: 'On', value: true },
+              { label: 'Off', value: false },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select Usage"
+            class="w-full"
+          />
         </div>
       </template>
     </Column>

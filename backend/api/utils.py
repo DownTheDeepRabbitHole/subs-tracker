@@ -17,7 +17,6 @@ DEFAULT_ICON_URL: str = (
 
 
 def get_icon_url(name):
-    print(quote(name))
     api_url = f"{LOGODEV_API_URL}/search?q={quote(name)}"
     headers = {"Authorization": f"Bearer {LOGODEV_API_SKEY}"}
 

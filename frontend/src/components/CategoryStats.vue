@@ -31,7 +31,7 @@
               optionLabel="label"
               optionValue="value"
               class="mb-2"
-              @change="handlePeriodChange"
+              @change="handleUpdateChart"
             />
 
             <!-- Display Type Selector (Total vs Average) -->
@@ -40,7 +40,7 @@
               :options="displayTypeOptions"
               optionLabel="label"
               optionValue="value"
-              @change="updateChart"
+              @change="handleUpdateChart"
             />
           </div>
         </div>
@@ -50,12 +50,15 @@
       <div class="flex-1 w-full">
         <!-- If Total is selected, show the recent payments list -->
         <div v-if="isTotal" class="mb-4">
-          <h3 class="text-lg font-semibold mb-2">Recent Payments</h3>
+          <h2 class="mb-2">Recent Payments</h2>
           <UserPlanList
-            :userPlans="userPlans"
+            :userPlans="recentUserPlans"
             :categories="categories"
             :fields="['plan', 'category', 'payment_date', 'cost']"
             :showFilters="false"
+            :showHeaders="false"
+            :paginator="false"
+            @refresh="fetchRecentUserPlans"
             class="w-full"
           />
         </div>
@@ -77,22 +80,21 @@ import UserPlanList from '@/components/UserPlanList.vue'
 import CardWrapper from './CardWrapper.vue'
 import CategoryTable from './CategoryTable.vue'
 
-import { useSubscriptionManager } from '@/composables/useSubscriptionManager'
-import { useFormatting } from '@/composables/useFormatting'
+import { useSubscriptionManager, useHelpers } from '@/composables'
 
-const { formatCurrency } = useFormatting()
+const { categories, fetchUserPlans, fetchCategories } = useSubscriptionManager()
+const { formatCurrency } = useHelpers()
 
 const selectedDisplayType = ref('total') // 'total' or 'average'
 const selectedPeriod = ref('month')
 const spendingByCategory = ref({})
 const totalOrAverageSpending = ref({})
-const categoryBreakdown = ref({})
+const categoryBreakdown = ref([])
+const recentUserPlans = ref([])
 
-// Chart reactivity
 const apexSeries = ref([])
 const apexOptions = ref({})
 
-// Selector option arrays
 const displayTypeOptions = [
   { label: 'Total', value: 'total' },
   { label: 'Average', value: 'average' },
@@ -117,26 +119,21 @@ const centerSubtitle = computed(() => {
   return isTotal.value ? `${periodLabel} Total` : `${periodLabel} Average`
 })
 
-const { userPlans, categories, fetchUserPlans, fetchCategories } = useSubscriptionManager()
-
 onMounted(async () => {
-  await fetchUserPlans()
+  await fetchRecentUserPlans()
   await fetchCategories()
   await fetchChartData()
-  updateChart()
+  buildChart()
 })
 
-// Handle period changes
-const handlePeriodChange = async () => {
-  await fetchUserPlans({ period: selectedPeriod.value })
+const handleUpdateChart = async () => {
+  await fetchRecentUserPlans()
   await fetchChartData()
-  updateChart()
+  buildChart()
 }
 
-// Fetch chart-related data from the API endpoints
 const fetchChartData = async () => {
   try {
-    // Fetch category-level spending data
     const categoryData = await fetchSpendingByCategory()
     spendingByCategory.value = categoryData
 
@@ -154,27 +151,30 @@ const fetchChartData = async () => {
   }
 }
 
-// Fetch spending by category
+const fetchRecentUserPlans = async () => {
+  recentUserPlans.value = await fetchUserPlans({
+    period: selectedPeriod.value,
+    recently_paid: 7,
+    page_size: 5,
+  })
+}
+
 const fetchSpendingByCategory = async () => {
   const { data } = await axios.get('/api/analytics/spending-by-category/')
   return data
 }
 
-// Build and update the ApexChart configuration
-const buildApexChart = () => {
+const buildChart = () => {
   const period = selectedPeriod.value
   const labels = []
   const series = []
 
-  // Populate the labels and series arrays.
-  // For labels, use only the icon if available (or fallback to category name)
   for (const [catName, catData] of Object.entries(spendingByCategory.value)) {
     const iconLabel = catData.icon ? catData.icon : catName
     labels.push(iconLabel)
     series.push(catData.costs[period] || 0)
   }
 
-  // If there is no data, add dummy values with a "(No Data)" suffix
   if (series.every((value) => value === 0)) {
     series.fill(1)
     labels.forEach((label, idx, arr) => {
@@ -182,14 +182,13 @@ const buildApexChart = () => {
     })
   }
 
-  // Update the reactive chart data
   apexSeries.value = series
   apexOptions.value = {
     chart: {
       type: 'donut',
       height: 350,
     },
-    labels, // The labels now contain just the icon for each category
+    labels,
     dataLabels: {
       enabled: true,
       formatter: (val, opts) => {
@@ -219,31 +218,23 @@ const buildApexChart = () => {
   }
 }
 
-// Build category breakdown data for display (used in average mode)
+// Creates corresponding category data for category table component, e.g. percentage
 const buildCategoryBreakdown = () => {
-  categoryBreakdown.value = {}
-  const period = selectedPeriod.value
-
-  // Calculate the total cost across all categories
-  let totalCost = 0
-  for (const catData of Object.values(spendingByCategory.value)) {
-    totalCost += catData[period] || 0
+  if (!spendingByCategory.value || !selectedPeriod.value) {
+    return []
   }
+  categoryBreakdown.value = []
 
-  // Compute each category's cost and percentage share
   for (const [catName, catData] of Object.entries(spendingByCategory.value)) {
-    const catCost = catData.costs[period] || 0
-    const percentage = catData.percentages[period] || 0
-    categoryBreakdown.value[catName] = {
-      cost: catCost,
-      percentage,
-      icon: catData.icon,
-    }
-  }
-}
+    const catCost = catData.costs[selectedPeriod.value] || 0
+    const percentage = catData.percentages[selectedPeriod.value] || 0
 
-// Update the chart whenever the display type changes
-const updateChart = () => {
-  buildApexChart()
+    categoryBreakdown.value.push({
+      name: catName,
+      percentage,
+      cost: catCost,
+      icon: catData.icon || '📊',
+    })
+  }
 }
 </script>

@@ -1,120 +1,55 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
+import { onMounted, ref } from 'vue'
+import { useSubscriptionManager } from '@/composables'
 
-import StatsCard from '@/components/StatsCard.vue'
-import ChartCard from '@/components/ChartCard.vue'
-import SpendingCard from '@/components/SpendingCard.vue'
+import CategoryStats from '@/components/CategoryStats.vue'
+import SpendingStats from '@/components/SpendingStats.vue'
+import UserPlanList from '@/components/UserPlanList.vue'
+import CardWrapper from '@/components/CardWrapper.vue'
+import UserPlanCard from '@/components/UserPlanCard.vue'
 
-const spendingByCategoryChartData = ref({
-  labels: [],
-  datasets: [
-    {
-      data: [],
-      backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726', '#26C6DA', '#7E57C2', '#EC407A'],
-    },
-  ],
-})
+const { fetchUserPlans } = useSubscriptionManager()
 
-const spendingPerPeriod = ref({
-  past_week: 0,
-  past_month: 0,
-  past_year: 0,
-})
+const upcomingPlans = ref([])
+const unusedPlans = ref([])
 
-const usageByCategoryChartData = ref({
-  labels: [],
-  datasets: [
-    {
-      data: [],
-      backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726', '#26C6DA', '#7E57C2', '#EC407A'],
-    },
-  ],
-})
-
-const fetchSpendingPerPeriod = async () => {
-  try {
-    const response = await axios.get('/api/analytics/total-spending-per-period/')
-    const data = response.data
-    spendingPerPeriod.value = {
-      past_week: data.past_week,
-      past_month: data.past_month,
-      past_year: data.past_year,
-    }
-  } catch (error) {
-    console.error('Error fetching spending per period:', error)
-  }
-}
-
-const fetchUsageByCategory = async () => {
-  try {
-    const response = await axios.get('/api/analytics/usage-by-category/')
-    const data = response.data
-
-    // Update pie chart data
-    usageByCategoryChartData.value.labels = Object.keys(data)
-    usageByCategoryChartData.value.datasets[0].data = Object.values(data)
-  } catch (error) {
-    console.error('Error fetching usage by category:', error)
-  }
-}
-
-const fetchSpendingByCategory = async () => {
-  try {
-    const response = await axios.get('/api/analytics/spending-by-category/')
-    const data = response.data
-
-    // Update pie chart data
-    spendingByCategoryChartData.value.labels = Object.keys(data)
-    spendingByCategoryChartData.value.datasets[0].data = Object.values(data).map(
-      (category) => category.year,
-    )
-  } catch (error) {
-    console.error('Error fetching spending by category:', error)
-  }
-}
-
-// Computed properties to check if the chart data is non-zero
-const hasSpendingByCategoryData = computed(() => {
-  return spendingByCategoryChartData.value.datasets[0].data.some((value) => value > 0)
-})
-
-const hasUsageByCategoryData = computed(() => {
-  return usageByCategoryChartData.value.datasets[0].data.some((value) => value > 0)
-})
-
-// Fetch data when the component is mounted
 onMounted(() => {
-  fetchSpendingByCategory()
-  fetchSpendingPerPeriod()
-  fetchUsageByCategory()
+  fetchUpcomingUserPlans()
+  fetchUnusedUserPlans()
 })
+
+const fetchUpcomingUserPlans = async () => {
+  upcomingPlans.value = await fetchUserPlans({ days_until_payment: 7, page_size: 7 })
+}
+
+const fetchUnusedUserPlans = async () => {
+  unusedPlans.value = await fetchUserPlans({ usage_score: 5, page_size: 6 })
+}
 </script>
 
 <template>
-  <div class="grid grid-flow-dense grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <!-- Spending Cards -->
-    <StatsCard title="Weekly Spending" :amount="spendingPerPeriod.past_week" />
-    <StatsCard title="Monthly Spending" :amount="spendingPerPeriod.past_month" />
-    <StatsCard title="Yearly Spending" :amount="spendingPerPeriod.past_year" />
-
-    <!-- Conditional rendering for Spending by Category chart -->
-    <ChartCard
-      v-if="hasSpendingByCategoryData"
-      title="Spending by Category"
-      chartType="doughnut"
-      :chartData="spendingByCategoryChartData"
-    />
-
-    <!-- Conditional rendering for Usage by Category chart -->
-    <ChartCard
-      v-if="hasUsageByCategoryData"
-      title="Usage by Category"
-      chartType="pie"
-      :chartData="usageByCategoryChartData"
-    />
-
-    
+  <SpendingStats />
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2">
+      <CategoryStats />
+    </div>
+    <div class="lg:col-span-1">
+      <CardWrapper title="Upcoming Payments">
+        <UserPlanList
+          :userPlans="upcomingPlans"
+          :fields="['plan', 'cost', 'payment_date']"
+          @refresh="fetchUpcomingUserPlans"
+          :showFilters="false"
+          :showHeaders="false"
+          :paginator="false"
+        />
+      </CardWrapper>
+    </div>
   </div>
-  <SpendingCard/>
+
+  <h3>Unused Subscriptions</h3>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <UserPlanCard v-for="userPlan in unusedPlans" :key="userPlan.id" :userPlan="userPlan" @refresh="fetchUnusedUserPlans"/>
+  </div>
 </template>

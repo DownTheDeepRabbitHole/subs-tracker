@@ -168,17 +168,6 @@ onMounted(() => {
   opacity: 0;
 }
 
-.p-button {
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease,
-    opacity 0.2s ease !important;
-}
-
-.p-button:not(.p-disabled):hover {
-  transform: translateX(2px);
-}
-
 .sidebar-transition {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

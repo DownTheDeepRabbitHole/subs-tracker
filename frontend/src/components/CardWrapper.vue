@@ -12,12 +12,14 @@ const props = defineProps({
 </script>
 
 <template>
-  <div v-if="title">
-    <h2 class="text-md font-semibold uppercase tracking-wide text-gray-600">{{ props.title }}</h2>
-    <p v-if="subtitle" class="text-sm text-gray-500 mt-1">{{ props.subtitle }}</p>
-  </div>
+  <div class="flex flex-col gap-4">
+    <div v-if="title">
+      <h3>{{ props.title }}</h3>
+      <h4 v-if="subtitle" class="mt-1">{{ props.subtitle }}</h4>
+    </div>
 
-  <Card class="p-4 overflow-x-auto">
-    <template #content><slot></slot></template>
-  </Card>
+    <Card class="overflow-x-auto">
+      <template #content><slot></slot></template>
+    </Card>
+  </div>
 </template>

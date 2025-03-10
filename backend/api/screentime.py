@@ -69,8 +69,8 @@ def calculate_usage(subscription_name, df, threshold=300, window_size=7, trend_p
         penalty = (1 - (recent_ma / older_ma)) * 5  # Penalize up to 5 points
         base_score -= penalty
 
-    # Ensure the score is between 0 and 10
-    usage_score = max(0, min(10, round(base_score)))
+    # Ensure the score is between 1 and 10
+    usage_score = max(1, min(10, round(base_score)))
     
     return usage_score
 

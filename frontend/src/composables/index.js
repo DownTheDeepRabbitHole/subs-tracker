@@ -1,21 +1,19 @@
-// useSubscriptionManager.js
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
 import { useToast } from 'primevue/usetoast'
 
 export function useSubscriptionManager() {
-  // Data refs
   const subscriptions = ref([])
   const categories = ref([])
   const userPlans = ref([])
   const loading = ref({
     subscriptions: false,
     categories: false,
-    userPlans: false
+    userPlans: false,
   })
-  const toast = useToast()
-  
-  // Fetch subscriptions
+
+  const { showToast, handleError } = useHelpers()
+
   const fetchSubscriptions = async () => {
     try {
       loading.value.subscriptions = true
@@ -28,8 +26,7 @@ export function useSubscriptionManager() {
       loading.value.subscriptions = false
     }
   }
-  
-  // Fetch categories
+
   const fetchCategories = async () => {
     try {
       loading.value.categories = true
@@ -42,22 +39,39 @@ export function useSubscriptionManager() {
       loading.value.categories = false
     }
   }
-  
-  // Fetch user plans
+
+  const fetchPlan = async (planId) => {
+    try {
+      const response = await axios.get(`/api/plans/${planId}`)
+      return response.data
+    } catch (error) {
+      handleError('Error fetching plan', error)
+    }
+  }
+
   const fetchUserPlans = async (params = {}) => {
     try {
       loading.value.userPlans = true
       const response = await axios.get('/api/user-plans/', { params: params })
-      userPlans.value = response.data
-      return response.data
+      userPlans.value = response.data.results
+      return response.data.results
     } catch (error) {
       handleError('Error fetching user plans', error)
     } finally {
       loading.value.userPlans = false
     }
   }
-  
-  // Delete user plan
+
+  const fetchUserPlan = async (planId) => {
+    try {
+      const response = await axios.get(`/api/user-plans/${planId}`)
+      return response.data
+    } catch (error) {
+      handleError('Error fetching user plan', error)
+      return null
+    }
+  }
+
   const deleteUserPlan = async (planId) => {
     try {
       await axios.delete(`/api/user-plans/${planId}/`)
@@ -69,8 +83,7 @@ export function useSubscriptionManager() {
       return false
     }
   }
-  
-  // Toggle usage tracking
+
   const toggleUsage = async (planId, currentTrackUsage) => {
     try {
       await axios.patch(`/api/user-plans/${planId}/toggle-usage/`, {
@@ -83,18 +96,18 @@ export function useSubscriptionManager() {
       return false
     }
   }
-  
-  // Add plan to user list
-  const addToUserPlans = async (planId, paymentDate) => {
+
+  const addToUserPlans = async (planId, paymentDate, trackUsage = false) => {
     try {
       if (!paymentDate) {
         showToast('error', 'Invalid data', 'Please select a next payment date')
         return false
       }
-      
+
       await axios.post('/api/user-plans/', {
         plan_id: planId,
         payment_date: paymentDate.toISOString().split('T')[0],
+        track_usage: trackUsage,
       })
       showToast('success', 'Plan added', 'Successfully added to your list')
       await fetchUserPlans()
@@ -104,14 +117,13 @@ export function useSubscriptionManager() {
       return false
     }
   }
-  
-  // Set budget
+
   const setBudget = async (budget, categoryId = null) => {
     if (!budget) {
       showToast('error', 'Error', 'Please enter a budget.')
       return null
     }
-    
+
     try {
       const response = await axios.get('/api/analytics/set-budget/', {
         params: {
@@ -119,11 +131,11 @@ export function useSubscriptionManager() {
           ...(categoryId && { category_id: categoryId }),
         },
       })
-      
-      const categoryText = categoryId ? 
-        `for ${categories.value.find(c => c.id === categoryId)?.name || 'selected category'}` : 
-        ''
-      
+
+      const categoryText = categoryId
+        ? `for ${categories.value.find((c) => c.id === categoryId)?.name || 'selected category'}`
+        : ''
+
       showToast('success', 'Budget Applied', `Budget of $${budget} has been set ${categoryText}`)
       return response.data.subscriptions
     } catch (error) {
@@ -131,17 +143,16 @@ export function useSubscriptionManager() {
       return null
     }
   }
-  
-  // Create new plan
+
   const createPlan = async (planData) => {
     const { name, cost, period, subscription } = planData
-    if (!name || !cost || !period || !subscription) {
+    if (!name || !period || !subscription) {
       showToast('error', 'Invalid data', 'Please provide all required fields.')
       return false
     }
-    
+
     try {
-      await axios.post('/api/plans/', {
+      const response = await axios.post('/api/plans/', {
         name,
         cost,
         period: period.toLowerCase(),
@@ -149,20 +160,19 @@ export function useSubscriptionManager() {
       })
       showToast('success', 'Success', 'Plan created successfully.')
       await fetchSubscriptions()
-      return true
+      return response.data
     } catch (error) {
       handleError('Error creating plan', error)
-      return false
+      return null
     }
   }
-  
-  // Create new subscription
+
   const createSubscription = async (name, categoryId) => {
     if (!name || !categoryId) {
       showToast('error', 'Invalid data', 'Please provide all fields.')
       return null
     }
-    
+
     try {
       const response = await axios.post('/api/subscriptions/', {
         name,
@@ -176,31 +186,77 @@ export function useSubscriptionManager() {
       return null
     }
   }
-  
-  // Helper: get category name by id
+
+  const updateSubscriptionCategory = async (subscriptionId, newCategoryId) => {
+    if (!subscriptionId || !newCategoryId) {
+      showToast('error', 'Invalid data', 'Subscription ID and new category are required.')
+      return null
+    }
+
+    try {
+      const response = await axios.patch(`/api/subscriptions/${subscriptionId}/`, {
+        category: newCategoryId,
+      })
+      showToast('success', 'Success', 'Subscription category updated.')
+      await fetchSubscriptions()
+      return response.data
+    } catch (error) {
+      handleError('Error updating subscription category', error)
+      return null
+    }
+  }
+
+  const updatePlan = async (planData) => {
+    const { name, cost, period, subscription } = planData
+    if (!name || !cost || !period || !subscription) {
+      showToast('error', 'Invalid data', 'Please provide all required fields.')
+      return false
+    }
+    try {
+      const response = await axios.put(`/api/plans/${planData.id}/`, {
+        name,
+        cost,
+        period: period.toLowerCase(),
+        subscription: subscription.id,
+      })
+      showToast('success', 'Success', 'Plan updated.')
+      await fetchSubscriptions()
+      return response.data
+    } catch (error) {
+      handleError('Error updating plans', error)
+      return null
+    }
+  }
+
+  const updateUserPlan = async (planId, paymentDate, trackUsage) => {
+    try {
+      if (!paymentDate || !trackUsage) {
+        showToast('error', 'Invalid data', 'Payment date and track usage are required.')
+        return false
+      }
+
+      const response = await axios.patch(`/api/user-plans/${planId}`, {
+        payment_date: paymentDate.toISOString().split('T')[0],
+        track_usage: trackUsage,
+      })
+      showToast('success', 'Plan updated', 'Successfully updated user plan')
+      await fetchUserPlans()
+      return response.data
+    } catch (error) {
+      handleError('Error updating user plan', error)
+      return null
+    }
+  }
+
+  // ** Helper functions **
+
   const getCategoryName = (categoryId) => {
     const category = categories.value.find((cat) => cat.id === categoryId)
     return category ? category.name : 'Unknown'
   }
-  
-  // Helper: show toast notifications
-  const showToast = (severity, summary, detail) => {
-    toast.add({ severity, summary, detail, life: 3000 })
-  }
-  
-  // Helper: handle errors
-  const handleError = (message, error) => {
-    console.error(message, error)
-    showToast('error', 'Error', error.response?.data?.error || message)
-  }
-  
-  // Initialize all data
+
   const initData = async () => {
-    await Promise.all([
-      fetchCategories(),
-      fetchSubscriptions(),
-      fetchUserPlans()
-    ])
+    await Promise.all([fetchCategories(), fetchSubscriptions(), fetchUserPlans()])
   }
 
   return {
@@ -208,18 +264,56 @@ export function useSubscriptionManager() {
     categories,
     userPlans,
     loading,
-    
+
     fetchSubscriptions,
     fetchCategories,
+    fetchPlan,
     fetchUserPlans,
+    fetchUserPlan,
     deleteUserPlan,
     toggleUsage,
+    updateSubscriptionCategory,
+    updatePlan,
+    updateUserPlan,
     addToUserPlans,
     setBudget,
     createPlan,
     createSubscription,
     getCategoryName,
+    initData,
+  }
+}
+
+export function useHelpers() {
+  const toast = useToast()
+
+  const showToast = (severity, summary, detail) => {
+    toast.add({ severity, summary, detail, life: 3000 })
+  }
+
+  const handleError = (message, error) => {
+    console.error(message, error)
+    showToast('error', 'Error', error.response?.data?.error || message)
+  }
+
+  function formatCurrency(value) {
+    if (isNaN(value)) return ''
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value))
+  }
+
+  function formatPercentage(value) {
+    return `${value.toFixed(1)}%`
+  }
+
+  return {
+    formatCurrency,
+    formatPercentage,
     showToast,
-    initData
+    handleError,
   }
 }

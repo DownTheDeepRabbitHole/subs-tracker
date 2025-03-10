@@ -39,8 +39,8 @@ analytics_urlpatterns = [
 ]
 
 cron_urlpatterns = [
-    path("update/", UpdateView.as_view(), name="update-payments"),
-    path("update-unused/", UpdateUnusedView.as_view(), name="update-unused"),
+    path("payments/", UpdateView.as_view(), name="update-payments-plans"),
+    path("unused/", UpdateUnusedView.as_view(), name="update-unused-plans"),
 ]
 
 urlpatterns = [

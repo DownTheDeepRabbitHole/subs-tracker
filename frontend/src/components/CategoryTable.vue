@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-import { useFormatting } from '@/composables/useFormatting'
+import { useHelpers } from '@/composables'
 
-const { formatCurrency } = useFormatting()
+const { formatCurrency } = useHelpers()
 
 const props = defineProps({
   categories: {
-    type: Object,
+    type: Array,
     required: true,
   },
   loading: {
@@ -16,25 +16,8 @@ const props = defineProps({
   },
 })
 
-// Transform the category object into an array for DataTable
-const tableData = computed(() => {
-  console.log(props.categories)
-  if (!props.categories || Object.keys(props.categories).length === 0) {
-    return []
-  }
+const hasData = computed(() => props.categories.length > 0)
 
-  return Object.entries(props.categories).map(([name, data]) => ({
-    name,
-    percentage: data.percentage,
-    cost: data.cost,
-    icon: data.icon || '📊',
-  }))
-})
-
-// Check if we have data
-const hasData = computed(() => tableData.value.length > 0)
-
-// Sort options
 const sortOptions = ref([
   { label: 'Highest Cost', value: 'cost:desc' },
   { label: 'Lowest Cost', value: 'cost:asc' },
@@ -43,7 +26,7 @@ const sortOptions = ref([
 ])
 const sortKey = ref('cost:desc')
 
-// Custom color mapping for percentage tags
+// Custom color mapping w/ percentages
 const getColorForPercentage = (percentage) => {
   if (percentage >= 50) return 'danger'
   if (percentage >= 25) return 'warning'
@@ -73,7 +56,7 @@ const getColorForPercentage = (percentage) => {
 
     <DataTable
       v-else
-      :value="tableData"
+      :value="props.categories"
       :loading="loading"
       :sortField="sortKey.split(':')[0]"
       :sortOrder="sortKey.split(':')[1] === 'desc' ? -1 : 1"
@@ -110,7 +93,6 @@ const getColorForPercentage = (percentage) => {
 </template>
 
 <style scoped>
-/* Add some custom styling to match Stripe/Rocket Money UI */
 :deep(.p-datatable) {
   border-radius: 8px;
   overflow: hidden;

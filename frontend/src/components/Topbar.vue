@@ -13,7 +13,7 @@
 
         <Button icon="pi pi-bell" variant="text" size="large" aria-label="Notifications" />
 
-        <RouterLink to="/settings">
+        <RouterLink to="/profile">
           <Button icon="pi pi-cog" variant="text" size="large" aria-label="Settings" />
         </RouterLink>
 
