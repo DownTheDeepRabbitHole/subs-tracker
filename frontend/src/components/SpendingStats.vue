@@ -37,7 +37,7 @@ const fetchHighestUserPlans = async () => {
   await fetchUserPlans({ period: selectedPeriod.value, page_size: 5 })
 }
 
-function buildChart() {
+const buildChart = () => {
   const maxCost = Math.ceil(Math.max(...userPlans.value.map((plan) => plan.cost ?? 0)))
   const maxUsageScore = Math.ceil(
     Math.max(...userPlans.value.map((plan) => plan.usage_score ?? 0)) * 1.3,
@@ -60,8 +60,15 @@ function buildChart() {
     },
     bar: {
       dataLabels: {
-        position: 'top',
+        position: 'bottom',
       },
+    },
+    dataLabels: {
+
+      enabled: true,
+      formatter: (val, { seriesIndex }) => {
+        return (seriesIndex == 0) ? formatCurrency(val) : val.toFixed(1)
+      }
     },
     annotations: {
       points: userPlans.value.map((plan) => {
@@ -161,7 +168,13 @@ function buildChart() {
 
       <!-- Right column: Bar Chart -->
       <div class="flex-1">
-        <apexchart v-if="apexOptions && apexSeries.length" type="bar" height="200" :options="apexOptions" :series="apexSeries" />
+        <apexchart
+          v-if="apexOptions && apexSeries.length"
+          type="bar"
+          height="200"
+          :options="apexOptions"
+          :series="apexSeries"
+        />
       </div>
     </div>
   </CardWrapper>

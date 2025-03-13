@@ -1,18 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useSubscriptionManager } from '@/composables'
+import { useSubscriptionManager, useHelpers } from '@/composables'
 import { useRouter } from 'vue-router'
 
-const {
-  subscriptions,
-  categories,
-  fetchSubscriptions,
-  fetchCategories,
-  addToUserPlans,
-  getCategoryName,
-  showToast,
-  deletePlan,
-} = useSubscriptionManager()
+const { subscriptions, categories, addToUserPlans, getCategoryName, deletePlan, initData } =
+  useSubscriptionManager()
+const { showToast } = useHelpers()
 
 const router = useRouter()
 
@@ -43,7 +36,6 @@ const handleAddToUserPlans = async () => {
   }
   const success = await addToUserPlans(selectedPlan.value.id, nextPaymentDate.value)
   if (success) {
-    showToast('success', 'Success', 'Plan added to your list.')
     showDateDialog.value = false
     nextPaymentDate.value = null
     selectedPlan.value = null
@@ -51,25 +43,16 @@ const handleAddToUserPlans = async () => {
 }
 
 // Navigate to edit view
-const handleEditPlanClick = (plan) => {
+const handleEditPlan = (plan) => {
   router.push({ name: 'edit plan', params: { planId: plan.id } })
 }
 
 // Delete plan with confirmation
-const handleDeletePlanClick = async (plan) => {
+const handleDeletePlan = async (plan) => {
   const confirmed = confirm(`Are you sure you want to delete "${plan.name}"?`)
   if (!confirmed) return
-  try {
-    const success = await deletePlan(plan.id)
-    if (success) {
-      showToast('success', 'Success', 'Plan deleted.')
-    } else {
-      showToast('error', 'Error', 'Failed to delete plan.')
-    }
-  } catch (error) {
-    console.error('Error deleting plan:', error)
-    showToast('error', 'Error', 'Failed to delete plan.')
-  }
+
+  await deletePlan(plan.id)
 }
 
 // Computed filtered and sorted subscriptions
@@ -99,9 +82,13 @@ const filteredSubscriptions = computed(() => {
         return a.name.localeCompare(b.name)
       })
     } else if (value === '!plans') {
-      subs = subs.slice().sort((a, b) => (b.plans ? b.plans.length : 0) - (a.plans ? a.plans.length : 0))
+      subs = subs
+        .slice()
+        .sort((a, b) => (b.plans ? b.plans.length : 0) - (a.plans ? a.plans.length : 0))
     } else if (value === 'plans') {
-      subs = subs.slice().sort((a, b) => (a.plans ? a.plans.length : 0) - (b.plans ? b.plans.length : 0))
+      subs = subs
+        .slice()
+        .sort((a, b) => (a.plans ? a.plans.length : 0) - (b.plans ? b.plans.length : 0))
     }
   }
 
@@ -114,8 +101,7 @@ const openDateDialog = (plan) => {
 }
 
 onMounted(() => {
-  fetchCategories()
-  fetchSubscriptions()
+  initData()
 })
 </script>
 
@@ -183,12 +169,12 @@ onMounted(() => {
                 <Button
                   icon="pi pi-pencil"
                   class="p-button-text text-blue-500 hover:text-blue-700 !w-8 !h-8"
-                  @click="handleEditPlanClick(plan)"
+                  @click="handleEditPlan(plan)"
                 />
                 <Button
                   icon="pi pi-trash"
                   class="p-button-text text-red-500 hover:text-red-700 !w-8 !h-8"
-                  @click="handleDeletePlanClick(plan)"
+                  @click="handleDeletePlan(plan)"
                 />
                 <Button
                   icon="pi pi-plus"
@@ -232,12 +218,12 @@ onMounted(() => {
                   <Button
                     icon="pi pi-pencil"
                     class="p-button-text text-blue-500 hover:text-blue-700 !w-8 !h-8"
-                    @click="handleEditPlanClick(plan)"
+                    @click="handleEditPlan(plan)"
                   />
                   <Button
                     icon="pi pi-trash"
                     class="p-button-text text-red-500 hover:text-red-700 !w-8 !h-8"
-                    @click="handleDeletePlanClick(plan)"
+                    @click="handleDeletePlan(plan)"
                   />
                   <Button
                     icon="pi pi-plus"

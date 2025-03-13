@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Cookies from 'js-cookie'
+import { useUser } from '@/composables'
 
 import MobileOverlay from '@/components/MobileOverlay.vue'
 
 const SIDEBAR_WIDTH = {
   COLLAPSED: 'w-20',
-  EXPANDED: 'w-60',
+  EXPANDED: 'w-55',
   MOBILE_BREAKPOINT: 768,
 }
 
@@ -20,6 +20,8 @@ const MENU_ITEMS = [
 ]
 
 const router = useRouter()
+
+const { logout } = useUser()
 
 const sidebarState = ref({
   isCollapsed: false,
@@ -45,12 +47,6 @@ const checkMobile = () => {
 
 const toggleSidebar = () => {
   sidebarState.value.isCollapsed = !sidebarState.value.isCollapsed
-}
-
-const logout = () => {
-  Cookies.remove('access_token')
-  Cookies.remove('refresh_token')
-  router.push('/login')
 }
 
 const isActive = computed(() => (path) => router.currentRoute.value.path === path)

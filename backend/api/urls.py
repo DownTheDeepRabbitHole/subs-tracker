@@ -1,6 +1,5 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import *
 
 router = DefaultRouter()
@@ -10,14 +9,16 @@ router.register("subscriptions", SubscriptionView, basename="subscriptions")
 router.register("categories", CategoryView, basename="categories")
 
 auth_urlpatterns = [
-    path("login/", TokenObtainPairView.as_view(), name="login"),
-    path("login/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("register/", RegisterView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="login"),
+    path("refresh/", CookieTokenRefreshView.as_view(), name="token-refresh"),
+    path("verify/", CookieTokenVerifyView.as_view(), name="token-verify"),
 ]
 
 user_urlpatterns = [
+    path("profile/", UserProfileView.as_view(), name="profile"),
     path("settings/", UserSettingsView.as_view(), name="settings"),
-    path("get-user-id/", GetUserId.as_view(), name="get-user-id"),
 ]
 
 analytics_urlpatterns = [
@@ -39,7 +40,7 @@ analytics_urlpatterns = [
 ]
 
 cron_urlpatterns = [
-    path("payments/", UpdateView.as_view(), name="update-payments-plans"),
+    path("payment/", UpdateView.as_view(), name="update-payment-plans"),
     path("unused/", UpdateUnusedView.as_view(), name="update-unused-plans"),
 ]
 

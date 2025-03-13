@@ -7,6 +7,7 @@ import { useSubscriptionManager, useHelpers } from '@/composables'
 import UserPlanList from '@/components/UserPlanList.vue'
 import UserPlanCard from '@/components/UserPlanCard.vue'
 import CardWrapper from '@/components/CardWrapper.vue'
+import SucessCard from '@/components/SucessCard.vue'
 
 const { categories, fetchCategories } = useSubscriptionManager()
 const { showToast, handleError } = useHelpers()
@@ -41,11 +42,14 @@ const handleSetBudget = async () => {
     })
     includedUserPlans.value = response.data.included_plans
     excludedUserPlans.value = response.data.excluded_plans
-    console.log(response.data)
     budgetApplied.value = true
 
     const categoryText = selectedCategory.value ? `for ${selectedCategory.value.name}` : ''
-    showToast('success', 'Budget Applied', `Budget of $${budgetInput.value} has been set ${categoryText}`)
+    showToast(
+      'success',
+      'Budget Applied',
+      `Budget of $${budgetInput.value} has been set ${categoryText}`,
+    )
   } catch (error) {
     handleError('Error setting budget', error)
   }
@@ -94,18 +98,10 @@ onMounted(() => {
   </CardWrapper>
 
   <div v-if="budgetApplied" class="mt-6">
-    <div v-if="allWithinBudget" class="p-6 bg-green-50 border border-green-200 rounded-lg">
-      <div class="flex items-center">
-        <i class="pi pi-check-circle text-green-500 text-2xl mr-3"></i>
-        <div>
-          <h3 class="text-xl font-semibold text-green-700">Great News!</h3>
-          <p class="text-green-600">
-            All your subscriptions fit within your budget of ${{ budgetInput }}.
-            {{ selectedCategory ? `Category: ${selectedCategory.name}` : '' }}
-          </p>
-        </div>
-      </div>
-    </div>
+    <SucessCard v-if="allWithinBudget" title="Great News!">
+      All your subscriptions fit within your budget of ${{ budgetInput }}.
+      {{ selectedCategory ? `Category: ${selectedCategory.name}` : '' }}
+    </SucessCard>
 
     <div v-else class="space-y-4">
       <h2 class="text-xl font-semibold">Subscriptions Exceeding Budget</h2>

@@ -1,6 +1,7 @@
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
 import Topbar from '@/components/Topbar.vue'
+import axios from 'axios'
 </script>
 
 <template>

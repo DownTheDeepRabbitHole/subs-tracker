@@ -6,7 +6,7 @@ import App from './App.vue'
 
 import router from './router'
 import axios from 'axios'
-import Cookies from 'js-cookie'
+import { userStore } from './composables'
 
 import ToastService from 'primevue/toastservice'
 
@@ -14,22 +14,21 @@ import PrimeVue from 'primevue/config'
 import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 
-import VueApexCharts from "vue3-apexcharts";
+import VueApexCharts from 'vue3-apexcharts'
 
 axios.defaults.baseURL = 'http://localhost:8000/'
 axios.defaults.headers['Content-Type'] = 'application/json'
+axios.defaults.withCredentials = true
 
-axios.interceptors.request.use(
-  function (config) {
-    const token = Cookies.get('access_token')
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
-    } else {
-      delete config.headers['Authorization']
-    }
-    return config
+axios.interceptors.response.use(
+  function (response) {
+    return response
   },
   function (error) {
+    if (error.response.status === 401) { // If cookie is expired, logout the user
+      userStore.logout()
+      router.push('/login')
+    }
     return Promise.reject(error)
   },
 )

@@ -1,6 +1,5 @@
 <script setup>
 import { computed } from 'vue'
-import axios from 'axios'
 
 import { useSubscriptionManager } from '@/composables'
 
@@ -14,6 +13,10 @@ const props = defineProps({
     required: true,
     default: () => {},
   },
+  dummy: {
+    type: Boolean,
+    default: false,
+  }
 })
 
 const emit = defineEmits(['refresh'])
@@ -47,11 +50,15 @@ const usageColor = computed(() => {
 })
 
 const handleDeleteUserPlan = async () => {
+  if (props.dummy) return;
+
   await deleteUserPlan(props.userPlan['id'])
   emit('refresh')
 }
 
 const handleToggleUsage = async () => {
+  if (props.dummy) return;
+
   await toggleUsage(props.userPlan['id'], props.userPlan['track_usage'])
   props.userPlan['track_usage'] = !props.userPlan['track_usage']
 }

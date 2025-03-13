@@ -1,69 +1,14 @@
 <script setup>
 import { ref } from 'vue'
-import router from '@/router'
+import { useUser } from '@/composables'
+
 import { RouterLink } from 'vue-router'
 
-import axios from 'axios'
-import Cookies from 'js-cookie'
-
-import { useToast } from 'primevue/usetoast'
-
-const toast = useToast()
+const { login } = useUser()
 
 const username = ref('')
 const password = ref('')
 const rememberMe = ref(true)
-
-const onSubmit = async () => {
-  try {
-    // Make a POST request to the backend login API
-    const response = await axios.post('/api/auth/login/', {
-      username: username.value,
-      password: password.value,
-    })
-
-    const { access, refresh } = response.data
-
-    // Set cookies with expiration based on "remember me" checkbox
-    if (rememberMe.value) {
-      Cookies.set('access_token', access, { expires: 1, path: '' })
-      Cookies.set('refresh_token', refresh, { expires: 1, path: '' })
-    } else {
-      Cookies.set('access_token', access, { path: '' })
-      Cookies.set('refresh_token', refresh, { path: '' })
-    }
-
-    // Initialize OneSignal and request notification permission
-    OneSignalDeferred.push(async function (OneSignal) {
-      if (!OneSignal.initialized) {
-        await OneSignal.init({
-          appId: 'dc6f6c0b-b679-4c19-9db3-021e0cf7a297',
-        })
-      }
-
-      const id = await getUserId()
-
-      if (id) {
-        console.log('Logging in with ID:', id)
-        await OneSignal.login(id).catch((error) => {
-          console.error('OneSignal login error: ', error)
-        })
-      }
-
-      OneSignal.Notifications.requestPermission()
-    })
-
-    router.push('/')
-  } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to log in.', life: 3000 })
-    console.log(error)
-  }
-}
-
-const getUserId = async () => {
-  const response = await axios.get('/api/user/get-user-id')
-  return response.data['user_id'].toString()
-}
 </script>
 
 <template>
@@ -73,7 +18,7 @@ const getUserId = async () => {
         Login
       </h2>
 
-      <form @submit.prevent="onSubmit">
+      <form @submit.prevent="login(username, password, rememberMe)">
         <div class="mb-4">
           <label
             for="username"

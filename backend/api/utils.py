@@ -1,7 +1,9 @@
 import os
 import requests
 from dotenv import load_dotenv
-from urllib.parse import quote  # https://stackoverflow.com/questions/21823965/use-20-instead-of-for-space-in-python-query-parameters
+from urllib.parse import (
+    quote,
+)  # https://stackoverflow.com/questions/21823965/use-20-instead-of-for-space-in-python-query-parameters
 
 # Load environment variables
 load_dotenv()
@@ -9,7 +11,7 @@ load_dotenv()
 # Constants
 LOGODEV_API_SKEY = os.getenv("LOGODEV_API_SKEY")
 LOGODEV_API_URL = "https://api.logo.dev"
-DEFAULT_ICON_URL: str = (
+DEFAULT_ICON_URL = (
     "https://icons.veryicon.com/png/o/business/settlement-platform-icon/default-16.png"
 )
 
@@ -35,11 +37,14 @@ def get_icon_url(name):
 
     return DEFAULT_ICON_URL
 
+def get_avatar_url(username):
+    return f"https://avatar.iran.liara.run/public?username={username}"
+
 
 def _knapsack(i, remaining, plans, memo):
     """Recursive 01 knapsack, using 2d dictionary of tuples (pairs) as key to save memory (~O(W) vs O(WV))"""
     if remaining < 0:
-        return -float('inf')
+        return -float("inf")
     if i >= len(plans) or remaining == 0:
         return 0
     if (i, remaining) in memo:
@@ -48,14 +53,14 @@ def _knapsack(i, remaining, plans, memo):
     current = plans[i]
     # Explore exclusion path
     exclude = _knapsack(i + 1, remaining, plans, memo)
-    
+
     # Explore inclusion path
-    include = current['usage_score'] + _knapsack(
-        i + 1, remaining - current['scaled_cost'], plans, memo
+    include = current["usage_score"] + _knapsack(
+        i + 1, remaining - current["scaled_cost"], plans, memo
     )
-    
+
     # Choose maximum value between the two and store in memo
-    max_val = max(exclude, include) if current['scaled_cost'] <= remaining else exclude
+    max_val = max(exclude, include) if current["scaled_cost"] <= remaining else exclude
     memo[(i, remaining)] = max_val
     return max_val
 
@@ -70,34 +75,36 @@ def budget_plans(user_plans, original_budget):
     processed = sorted(
         (
             {
-                'id': p['id'],
-                'usage_score': p['usage_score'],
-                'scaled_cost': round(p['cost']),
-                'value_density': p['usage_score'] / max(p['cost'], 1e-9)
+                "id": p["id"],
+                "usage_score": p["usage_score"],
+                "scaled_cost": round(p["cost"]),
+                "value_density": p["usage_score"] / max(p["cost"], 1e-9),
             }
             for p in user_plans
         ),
-        key=lambda x: (-x['value_density'], x['scaled_cost'])
+        key=lambda x: (-x["value_density"], x["scaled_cost"]),
     )
-    
+
     # Initialize memoization table and solve (build memo table)
     budget = round(original_budget)
     memo = {}
     max_score = _knapsack(0, budget, processed, memo)
-    
+
     # Backtracks through memo table to reconstruct optimal selections
     selected = []
     remaining_budget = budget
-    
+
     for idx, plan in enumerate(processed):
-        cost = plan['scaled_cost']
+        cost = plan["scaled_cost"]
         if remaining_budget < cost:
             continue
-            
+
         # Check if current plan was included in optimal solution
-        with_current = memo.get((idx + 1, remaining_budget - cost), 0) + plan['usage_score']
+        with_current = (
+            memo.get((idx + 1, remaining_budget - cost), 0) + plan["usage_score"]
+        )
         if memo.get((idx, remaining_budget), 0) == with_current:
-            selected.append(plan['id'])
+            selected.append(plan["id"])
             remaining_budget -= cost
-    
+
     return selected

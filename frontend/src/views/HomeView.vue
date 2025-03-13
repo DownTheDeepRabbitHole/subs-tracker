@@ -7,6 +7,7 @@ import SpendingStats from '@/components/SpendingStats.vue'
 import UserPlanList from '@/components/UserPlanList.vue'
 import CardWrapper from '@/components/CardWrapper.vue'
 import UserPlanCard from '@/components/UserPlanCard.vue'
+import SuccessCard from '@/components/SucessCard.vue'
 
 const { fetchUserPlans } = useSubscriptionManager()
 
@@ -49,7 +50,13 @@ const fetchUnusedUserPlans = async () => {
 
   <h3>Unused Subscriptions</h3>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-    <UserPlanCard v-for="userPlan in unusedPlans" :key="userPlan.id" :userPlan="userPlan" @refresh="fetchUnusedUserPlans"/>
+  <div v-if="unusedPlans.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <UserPlanCard
+      v-for="userPlan in unusedPlans"
+      :key="userPlan.id"
+      :userPlan="userPlan"
+      @refresh="fetchUnusedUserPlans"
+    />
   </div>
+  <SuccessCard v-else title="Congrats!">You have no unused subscriptions.</SuccessCard>
 </template>

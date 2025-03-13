@@ -38,7 +38,7 @@ const routes = [
         path: 'edit-user-plan/:userPlanId',
         name: 'edit user plan',
         component: () => import('@/views/EditUserPlanView.vue'),
-        meta: { title: 'Edit Plan' },
+        meta: { title: 'Edit User Plan' },
       },
       {
         path: 'test',
@@ -51,6 +51,12 @@ const routes = [
         name: 'profile',
         component: () => import('@/views/ProfileView.vue'),
         meta: { title: 'My Profile' },
+      },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/views/SettingsView.vue'),
+        meta: { title: 'My Settings' },
       },
       {
         path: 'budget',

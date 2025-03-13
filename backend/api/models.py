@@ -6,9 +6,13 @@ from datetime import date, timedelta
 
 from . import utils
 
+USAGE_SCORE_CHOICES = [(i, i) for i in range(0, 11)]
+
 
 class User(AbstractUser):
-    USAGE_SCORE_CHOICES = [(i, i) for i in range(0, 11)]
+    DEFAULT_AVATAR_URL = 'https://i.sstatic.net/l60Hf.png'
+
+    avatar_url = models.URLField(default=DEFAULT_AVATAR_URL)
 
     remember_me = models.BooleanField(default=False)
     allow_notifications = models.BooleanField(default=False)
@@ -18,6 +22,10 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+    def save(self, *args, **kwargs):
+        self.avatar_url = utils.get_avatar_url(self.username)
+        super().save(*args, **kwargs)
 
 
 class Category(models.Model):
@@ -30,9 +38,11 @@ class Category(models.Model):
 
 # Shared subscription table
 class Subscription(models.Model):
+    DEFAULT_ICON_URL=  "https://icons.veryicon.com/png/o/business/settlement-platform-icon/default-16.png"
+
     name = models.CharField(max_length=100)
     icon_url = models.URLField(
-        default="https://icons.veryicon.com/png/o/business/settlement-platform-icon/default-16.png"
+        default=DEFAULT_ICON_URL
     )
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="subscriptions"
@@ -47,6 +57,7 @@ class Subscription(models.Model):
 
 
 class Plan(models.Model):
+    # Source: https://stackoverflow.com/questions/1117564/set-django-integerfield-by-choices-name
     class Period(models.IntegerChoices):
         DAY = 1, "day"
         WEEK = 7, "week"
@@ -89,15 +100,13 @@ class Plan(models.Model):
 
 
 class UserPlan(models.Model):
-    USAGE_SCORE_CHOICES = [(i, i) for i in range(0, 11)]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_plans")
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
 
     payment_date = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
     total_spent = models.IntegerField(default=0)
-    
+
     track_usage = models.BooleanField(default=False)
     usage_score = models.IntegerField(default=1, choices=USAGE_SCORE_CHOICES)
     average_usage = models.IntegerField(default=0)
@@ -124,6 +133,6 @@ class UserPlan(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s {self.plan.subscription.name} - {self.plan.name}"
-    
+
     class Meta:
-        ordering = ['plan__name']
+        ordering = ["plan__name"]

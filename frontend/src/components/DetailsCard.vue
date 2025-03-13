@@ -4,6 +4,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useSubscriptionManager } from '@/composables'
 
 import FieldWrapper from '@/components/FieldWrapper.vue'
+import UserPlanCard from '@/components/UserPlanCard.vue'
 
 const {
   subscriptions,
@@ -12,6 +13,7 @@ const {
   fetchSubscriptions,
   createSubscription,
   updateSubscriptionCategory,
+  generateDummyUserPlan,
 } = useSubscriptionManager()
 
 const props = defineProps({
@@ -119,119 +121,126 @@ const handleCreateSubscription = async () => {
 </script>
 
 <template>
-  <Card class="p-4">
-    <template #content>
-      <!-- Subscription Field -->
-      <FieldWrapper title="Subscription">
-        <AutoComplete
-          v-model="form.plan.subscription"
-          :suggestions="filteredSubs"
-          optionLabel="name"
-          @complete="searchSubscriptions"
-          :disabled="disabledFields.includes('subscription')"
-          forceSelection
-          placeholder="Enter or select a subscription"
-          inputClass="!border-none text-right w-full"
-          class="w-full"
-        >
-          <template #option="slotProps">
-            <div class="flex flex-1 items-center justify-between">
-              <img
-                :alt="slotProps.option.name"
-                :src="slotProps.option.icon_url"
-                class="w-6 h-6 mr-2 rounded"
-              />
-              <div>{{ slotProps.option.name }}</div>
-            </div>
-          </template>
-        </AutoComplete>
-        <Button icon="pi pi-plus" variant="text" @click="showDialog = true" />
-      </FieldWrapper>
+  <div class="flex flex-col-reverse lg:flex-row gap-6">
+    <Card class="flex-1 p-4">
+      <template #content>
+        <!-- Subscription Field -->
+        <FieldWrapper title="Subscription">
+          <AutoComplete
+            v-model="form.plan.subscription"
+            :suggestions="filteredSubs"
+            optionLabel="name"
+            @complete="searchSubscriptions"
+            :disabled="disabledFields.includes('subscription')"
+            forceSelection
+            placeholder="Enter or select a subscription"
+            inputClass="!border-none text-right w-full"
+            class="w-full"
+          >
+            <template #option="slotProps">
+              <div class="flex flex-1 items-center justify-between">
+                <img
+                  :alt="slotProps.option.name"
+                  :src="slotProps.option.icon_url"
+                  class="w-6 h-6 mr-2 rounded"
+                />
+                <div>{{ slotProps.option.name }}</div>
+              </div>
+            </template>
+          </AutoComplete>
+          <Button icon="pi pi-plus" variant="text" @click="showDialog = true" />
+        </FieldWrapper>
 
-      <!-- Category Picker (disabled if no subscription is selected) -->
-      <FieldWrapper title="Category">
-        <Select
-          v-model="currentCategory"
-          :options="categories"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="Select category"
-          class="border-none"
-          inputClass="!border-none text-right"
-          :disabled="!form.plan.subscription || disabledFields.includes('subscription')"
-        />
-      </FieldWrapper>
+        <!-- Category Picker (disabled if no subscription is selected) -->
+        <FieldWrapper title="Category">
+          <Select
+            v-model="currentCategory"
+            :options="categories"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Select category"
+            class="border-none"
+            inputClass="!border-none text-right"
+            :disabled="!form.plan.subscription || disabledFields.includes('subscription')"
+          />
+        </FieldWrapper>
 
-      <!-- Plan Name -->
-      <FieldWrapper title="Plan Name">
-        <InputText
-          v-model="form.plan.name"
-          :disabled="disabledFields.includes('plan')"
-          placeholder="Enter plan name"
-          class="flex-grow text-right border-none w-full"
-        />
-      </FieldWrapper>
+        <!-- Plan Name -->
+        <FieldWrapper title="Plan Name">
+          <InputText
+            v-model="form.plan.name"
+            :disabled="disabledFields.includes('plan')"
+            placeholder="Enter plan name"
+            class="flex-grow text-right border-none w-full"
+          />
+        </FieldWrapper>
 
-      <!-- Cost -->
-      <FieldWrapper title="Cost">
-        <InputNumber
-          v-model="form.plan.cost"
-          mode="currency"
-          currency="CAD"
-          placeholder="Enter cost"
-          :disabled="disabledFields.includes('plan') || form.plan.freeTrial"
-          inputClass="!border-none text-right w-full"
-          class="w-full"
-        />
-      </FieldWrapper>
+        <!-- Cost -->
+        <FieldWrapper title="Cost">
+          <InputNumber
+            v-model="form.plan.cost"
+            mode="currency"
+            currency="CAD"
+            placeholder="Enter cost"
+            :disabled="disabledFields.includes('plan') || form.plan.freeTrial"
+            inputClass="!border-none text-right w-full"
+            class="w-full"
+          />
+        </FieldWrapper>
 
-      <!-- Period -->
-      <FieldWrapper title="Period">
-        <Select
-          v-model="form.plan.period"
-          :options="periodOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Select period"
-          inputClass="!border-none text-right"
-          class="border-none"
-          :disabled="disabledFields.includes('plan')"
-        />
-      </FieldWrapper>
+        <!-- Period -->
+        <FieldWrapper title="Period">
+          <Select
+            v-model="form.plan.period"
+            :options="periodOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select period"
+            inputClass="!border-none text-right"
+            class="border-none"
+            :disabled="disabledFields.includes('plan')"
+          />
+        </FieldWrapper>
 
-      <!-- Next Payment Date -->
-      <FieldWrapper title="Next Payment Date">
-        <DatePicker
-          v-model="form.userPlan.paymentDate"
-          dateFormat="yy-mm-dd"
-          placeholder="yy-mm-dd"
-          inputClass="!border-none text-right w-full"
-          class="w-full"
-          showIcon
-          iconDisplay="input"
-          :disabled="disabledFields.includes('userPlan')"
-        />
-      </FieldWrapper>
+        <!-- Next Payment Date -->
+        <FieldWrapper title="Next Payment Date">
+          <DatePicker
+            v-model="form.userPlan.paymentDate"
+            dateFormat="yy-mm-dd"
+            placeholder="yy-mm-dd"
+            inputClass="!border-none text-right w-full"
+            class="w-full"
+            showIcon
+            iconDisplay="input"
+            :disabled="disabledFields.includes('userPlan')"
+          />
+        </FieldWrapper>
 
-      <!-- Track Usage Toggle -->
-      <FieldWrapper title="Track Usage">
-        <ToggleSwitch
-          v-model="form.userPlan.trackUsage"
-          :disabled="disabledFields.includes('userPlan')"
-        />
-      </FieldWrapper>
+        <!-- Track Usage Toggle -->
+        <FieldWrapper title="Track Usage">
+          <ToggleSwitch
+            v-model="form.userPlan.trackUsage"
+            :disabled="disabledFields.includes('userPlan')"
+          />
+        </FieldWrapper>
 
-      <!-- Free Trial Toggle -->
-      <FieldWrapper title="Free Trial">
-        <ToggleSwitch v-model="form.plan.freeTrial" :disabled="disabledFields.includes('plan')" />
-      </FieldWrapper>
+        <!-- Free Trial Toggle -->
+        <FieldWrapper title="Free Trial">
+          <ToggleSwitch v-model="form.plan.freeTrial" :disabled="disabledFields.includes('plan')" />
+        </FieldWrapper>
 
-      <!-- Action Button -->
-      <div class="mt-6">
-        <Button :label="props.label" class="w-full p-button-primary" @click="onSubmit(form)" />
-      </div>
-    </template>
-  </Card>
+        <!-- Action Button -->
+        <div class="mt-6">
+          <Button :label="props.label" class="w-full p-button-primary" @click="onSubmit(form)" />
+        </div>
+      </template>
+    </Card>
+    <div class="flex-1 items-center justify-center">
+      <h2>Card Preview</h2>
+      <Divider />
+      <UserPlanCard :userPlan="generateDummyUserPlan(form)" :dummy="true" />
+    </div>
+  </div>
 
   <!-- New Subscription Dialog -->
   <Dialog v-model:visible="showDialog" header="Add New Subscription" modal closable class="w-1/2">

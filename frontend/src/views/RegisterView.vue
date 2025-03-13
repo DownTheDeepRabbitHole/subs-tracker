@@ -1,13 +1,9 @@
 <script setup>
 import { reactive } from 'vue'
 
-import router from '@/router'
-import axios from 'axios'
-import Cookies from 'js-cookie'
+import { useUser } from '@/composables'
 
-import { useToast } from 'primevue/usetoast'
-
-const toast = useToast()
+const {register} = useUser()
 
 const form = reactive({
   username: '',
@@ -15,43 +11,8 @@ const form = reactive({
   rememberMe: true,
 })
 
-const handleSubmit = async () => {
-  const newUser = {
-    username: form.username,
-    password: form.password,
-  }
-
-  try {
-    const response = await axios.post('/api/auth/register/', newUser)
-
-    const { access, refresh } = response.data
-
-    if (form.rememberMe) {
-      Cookies.set('access_token', access, { expires: 1, path: '' })
-      Cookies.set('refresh_token', refresh, { expires: 1, path: '' })
-    } else {
-      Cookies.set('access_token', access, { path: '' })
-      Cookies.set('refresh_token', refresh, { path: '' })
-    }
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Registered successfully!',
-      life: 3000,
-    })
-    console.log('Registered successfully!')
-
-    router.push('/')
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to register account.',
-      life: 3000,
-    })
-    console.error('Error creating user', error.data)
-  }
+const handleSubmit = () => {
+  register(form.username, form.password)
 }
 </script>
 

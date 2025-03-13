@@ -69,20 +69,19 @@ class UserPlanView(viewsets.ModelViewSet):
             if track_usage.lower() not in ["true", "false"]:
                 raise ValidationError("track_usage must be 'true' or 'false'")
             params["track_usage"] = track_usage.lower() == "true"
-        
+
         if period_str := query_params.get("period"):
             try:
                 params["period"] = Plan.Period.get_days(period_str)
             except ValueError as e:
                 raise ValidationError(str(e))
-            
+
         for param in ["cost_min", "cost_max"]:
             if value := query_params.get(param):
                 try:
                     params[param] = Decimal(value)
                 except InvalidOperation:
                     raise ValidationError(f"{param} must be a decimal number")
-        
 
         date_params = ["days_until_payment", "recently_paid"]
         for param in date_params:
@@ -93,7 +92,6 @@ class UserPlanView(viewsets.ModelViewSet):
                         raise ValueError
                 except ValueError:
                     raise ValidationError(f"{param} must be a positive integer")
-        
 
         if ordering := query_params.get("ordering"):
             allowed_static_fields = {"payment_date", "plan__name", "track_usage"}
@@ -111,6 +109,7 @@ class UserPlanView(viewsets.ModelViewSet):
     def _build_filters(self, params, today):
         # source: https://stackoverflow.com/questions/4523530/q-objects-and-the-operator-in-django
         filters = Q()
+
         if category_id := params.get("category_id"):
             filters &= Q(plan__subscription__category__id=category_id)
         if track_usage := params.get("track_usage", None):
@@ -121,6 +120,7 @@ class UserPlanView(viewsets.ModelViewSet):
         if days := params.get("recently_paid"):
             start_date = today - timedelta(days=days)
             filters &= Q(payment_date__range=[start_date, today])
+
         return filters
 
     def _annotate_cost(self, queryset, target_period):
@@ -216,20 +216,51 @@ class SubscriptionView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        params = self.request.query_params
 
-        # Apply filters based on query parameters
+        params = self._parse_and_validate_params(self.request.query_params)
+        filters = self._build_filters(params)
+
+        queryset = queryset.filter(filters)
+
+        return queryset
+
+    def _parse_and_validate_params(self, query_params):
+        params = {}
+
+        if category_id := query_params.get("category_id"):
+            try:
+                params["category_id"] = int(category_id)
+            except ValueError:
+                raise ValidationError("category_id must be an integer")
+
+        for param in ["cost_min", "cost_max"]:
+            if value := query_params.get(param):
+                try:
+                    params[param] = Decimal(value)
+                except InvalidOperation:
+                    raise ValidationError(f"{param} must be a decimal number")
+
+        if period := query_params.get("period"):
+            try:
+                params["period"] = int(period)
+            except ValueError:
+                raise ValidationError("period must be an integer")
+
+        return params
+
+    def _build_filters(self, params):
         filters = Q()
+
+        if category_id := params.get("category_id"):
+            filters &= Q(category__id=category_id)
         if cost_min := params.get("cost_min"):
             filters &= Q(plan__cost__gte=cost_min)
         if cost_max := params.get("cost_max"):
             filters &= Q(plan__cost__lte=cost_max)
         if period := params.get("period"):
             filters &= Q(plan__period=period)
-        if category_id := params.get("category_id"):
-            filters &= Q(category__id=category_id)
 
-        return queryset.filter(filters)
+        return filters
 
 
 class PlanView(viewsets.ModelViewSet):

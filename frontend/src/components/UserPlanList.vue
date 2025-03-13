@@ -2,11 +2,11 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { FilterMatchMode } from '@primevue/core/api'
-import { formatDistanceToNow } from 'date-fns'
 
-import { useSubscriptionManager } from '@/composables'
+import { useSubscriptionManager, useHelpers } from '@/composables'
 
-const { deleteUserPlan, toggleUsage } = useSubscriptionManager()
+const { deleteUserPlan, toggleUsage, getCategoryName } = useSubscriptionManager()
+const { formatPaymentDate } = useHelpers()
 
 const router = useRouter()
 
@@ -96,15 +96,6 @@ watch(
   { immediate: true },
 )
 
-const getCategoryName = (categoryId) => {
-  const cat = props.categories.find((c) => c.id === categoryId)
-  return cat ? cat.name : 'Unknown'
-}
-
-const formatPaymentDate = (date) => {
-  return formatDistanceToNow(new Date(date), { addSuffix: true })
-}
-
 // Compute a color for usage score (0: red, 10: green)
 const getUsageColor = (score) => {
   const green = Math.floor((score / 10) * 255)
@@ -121,17 +112,20 @@ const handlePeriodChange = () => {
   emit('refresh', { period: filters.value.period.value })
 }
 
-const handleDelete = async (planId) => {
-  await deleteUserPlan(planId)
+const handleDelete = async (userPlan) => {
+  const confirmed = confirm(`Are you sure you want to delete "${userPlan.name}"?`)
+  if (!confirmed) return
+
+  await deleteUserPlan(userPlan.id)
   emit('refresh')
 }
 
-const handleEdit = (planId) => {
-  router.push({ name: 'edit plan', params: { planId } })
+const handleEdit = (userPlan) => {
+  router.push({ name: 'edit user plan', params: { userPlanId: userPlan.id } })
 }
 
-const handleToggleUsage = async (plan) => {
-  await toggleUsage(plan.id, plan.track_usage)
+const handleToggleUsage = async (userPlan) => {
+  await toggleUsage(userPlan.id, userPlan.track_usage)
   emit('refresh')
 }
 </script>
@@ -250,14 +244,14 @@ const handleToggleUsage = async (plan) => {
       <template v-else-if="col.field === 'actions'" #body="{ data }">
         <div class="flex items-center space-x-2">
           <Button
-            @click="handleEdit(data.id)"
+            @click="handleEdit(data)"
             icon="pi pi-pencil"
             severity="secondary"
             class="w-8 h-8"
             aria-label="Edit plan"
           />
           <Button
-            @click="handleDelete(data.id)"
+            @click="handleDelete(data)"
             icon="pi pi-trash"
             severity="danger"
             class="w-8 h-8"

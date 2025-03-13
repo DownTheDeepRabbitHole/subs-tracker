@@ -1,4 +1,8 @@
-<script setup></script>
+<script setup>
+import { useUser } from '@/composables'
+
+const { userStore } = useUser()
+</script>
 
 <template>
   <Toolbar class="bg-white rounded-none border-0 sticky top-0 p-3 z-10">
@@ -13,12 +17,22 @@
 
         <Button icon="pi pi-bell" variant="text" size="large" aria-label="Notifications" />
 
-        <RouterLink to="/profile">
+        <RouterLink to="/settings">
           <Button icon="pi pi-cog" variant="text" size="large" aria-label="Settings" />
         </RouterLink>
 
         <RouterLink to="/profile">
-          <Button icon="pi pi-user" variant="text" size="large" aria-label="Profile" />
+          <Button variant="text" aria-label="Profile">
+            <template #icon>
+              <img
+                v-if="userStore.loaded"
+                :src="userStore.profile.avatar_url"
+                alt="Profile"
+                class="object-cover !w-8 !h-8 rounded-full items-center"
+              />
+              <i v-else class="pi pi-user"></i>
+            </template>
+          </Button>
         </RouterLink>
       </div>
     </template>

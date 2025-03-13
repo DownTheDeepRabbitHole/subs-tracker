@@ -1,77 +1,3 @@
-<template>
-  <CardWrapper title="Spending Breakdown">
-    <!-- Main layout: Chart on top, details below  -->
-    <div class="flex flex-col gap-8 mt-4 items-start">
-      <!-- Donut Chart Wrapper (relative) -->
-      <div class="relative mx-auto w-full">
-        <!-- Actual ApexCharts Donut -->
-        <apexchart
-          type="donut"
-          :options="apexOptions"
-          :series="apexSeries"
-          width="100%"
-          height="350"
-        />
-
-        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div class="pointer-events-auto flex flex-col items-center text-center">
-            <div class="text-4xl font-bold">
-              {{ centerValue }}
-            </div>
-
-            <!-- Small sublabel (e.g. "Monthly Average") -->
-            <div class="text-sm text-gray-500 mb-3">
-              {{ centerSubtitle }}
-            </div>
-
-            <!-- Period Selector -->
-            <Select
-              v-model="selectedPeriod"
-              :options="periodOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="mb-2"
-              @change="handleUpdateChart"
-            />
-
-            <!-- Display Type Selector (Total vs Average) -->
-            <Select
-              v-model="selectedDisplayType"
-              :options="displayTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              @change="handleUpdateChart"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Detail / List Section -->
-      <div class="flex-1 w-full">
-        <!-- If Total is selected, show the recent payments list -->
-        <div v-if="isTotal" class="mb-4">
-          <h2 class="mb-2">Recent Payments</h2>
-          <UserPlanList
-            :userPlans="recentUserPlans"
-            :categories="categories"
-            :fields="['plan', 'category', 'payment_date', 'cost']"
-            :showFilters="false"
-            :showHeaders="false"
-            :paginator="false"
-            @refresh="fetchRecentUserPlans"
-            class="w-full"
-          />
-        </div>
-
-        <!-- If Average is selected, show a category breakdown table -->
-        <div v-else>
-          <CategoryTable :categories="categoryBreakdown" />
-        </div>
-      </div>
-    </div>
-  </CardWrapper>
-</template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
@@ -238,3 +164,77 @@ const buildCategoryBreakdown = () => {
   }
 }
 </script>
+
+
+<template>
+  <CardWrapper title="Spending Breakdown">
+    <div class="flex flex-col gap-8 mt-4 items-start">
+      <!-- Donut Chart Wrapper -->
+      <div class="relative mx-auto w-full">
+        <!-- Actual ApexCharts Donut -->
+        <apexchart
+          type="donut"
+          :options="apexOptions"
+          :series="apexSeries"
+          width="100%"
+          height="350"
+        />
+
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div class="pointer-events-auto flex flex-col items-center text-center">
+            <div class="text-4xl font-bold">
+              {{ centerValue }}
+            </div>
+
+            <!-- "Total" Sublabel -->
+            <div class="text-sm text-gray-500 mb-3">
+              {{ centerSubtitle }}
+            </div>
+
+            <!-- Period Selector -->
+            <Select
+              v-model="selectedPeriod"
+              :options="periodOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="mb-2"
+              @change="handleUpdateChart"
+            />
+
+            <!-- Display Type Selector (total/avg) -->
+            <Select
+              v-model="selectedDisplayType"
+              :options="displayTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              @change="handleUpdateChart"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Section -->
+      <div class="flex-1 w-full">
+        <!-- If Total is selected, show the recent payments list -->
+        <div v-if="isTotal" class="mb-4">
+          <h2 class="mb-2">Recent Payments</h2>
+          <UserPlanList
+            :userPlans="recentUserPlans"
+            :categories="categories"
+            :fields="['plan', 'category', 'payment_date', 'cost']"
+            :showFilters="false"
+            :showHeaders="false"
+            :paginator="false"
+            @refresh="fetchRecentUserPlans"
+            class="w-full"
+          />
+        </div>
+
+        <!-- If Average is selected, show a category breakdown table -->
+        <div v-else>
+          <CategoryTable :categories="categoryBreakdown" />
+        </div>
+      </div>
+    </div>
+  </CardWrapper>
+</template>

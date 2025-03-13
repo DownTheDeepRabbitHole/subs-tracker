@@ -2,16 +2,16 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router' 
 
-import { useSubscriptionManager } from '@/composables'
+import { useSubscriptionManager, useValidateForms } from '@/composables'
 import DetailsCard from '@/components/DetailsCard.vue'
 
 const { fetchUserPlan, updatePlan, updateUserPlan } = useSubscriptionManager()
+const { validatePlan, validateUserPlan } = useValidateForms()
 
 const route = useRoute()
 const router = useRouter()
 
 const userPlanId = ref(route.params.userPlanId)
-
 const userPlanData = ref({})
 
 onMounted(async () => {
@@ -34,10 +34,12 @@ onMounted(async () => {
 })
 
 const handleEditUserPlan = async (form) => {
-  await updatePlan(form.plan)
-  await updateUserPlan(form.plan.id, form.userPlan.paymentDate, form.userPlan.trackUsage)
+  if (!validatePlan(form.plan) || !validateUserPlan(form.userPlan)) return
 
-  router.push(-1)
+  await updatePlan(form.plan)
+  await updateUserPlan(userPlanId.value, form.userPlan.paymentDate, form.userPlan.trackUsage)
+
+  router.go(-1)
 }
 </script>
 
