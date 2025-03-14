@@ -58,6 +58,11 @@ export function useUser() {
   }
 
   const login = async (username, password, rememberMe) => {
+    if (!username.trim() || !password.trim()) {
+      showToast('error', 'Invalid data', 'Username and password are required.')
+      return
+    }
+
     try {
       await axios.post('/api/auth/login/', { username, password, remember_me: rememberMe })
       await fetchUserProfile()
@@ -69,6 +74,11 @@ export function useUser() {
   }
 
   const register = async (username, password, rememberMe) => {
+    if (!username.trim() || !password.trim()) {
+      showToast('error', 'Invalid data', 'Username and password are required.')
+      return
+    }
+
     try {
       await axios.post('/api/auth/register/', { username, password, remember_me: rememberMe })
       await fetchUserProfile()

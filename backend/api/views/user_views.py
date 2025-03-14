@@ -86,11 +86,13 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = RegisterUserSerializer(data=request.data)
+        remember_me = request.data.get("remember_me", False)
 
         if serializer.is_valid():
             user = serializer.save()
+
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
+            access = refresh.access_token
 
             response = Response(
                 {"user": UserProfileSerializer(user).data}, status=status.HTTP_201_CREATED
@@ -98,10 +100,11 @@ class RegisterView(APIView):
 
             response.set_cookie(
                 key="access_token",
-                value=access_token,
+                value=str(access),
                 httponly=True,
                 secure=True,
                 samesite="None",
+                max_age=access.lifetime if remember_me else None,
             )
 
             response.set_cookie(
@@ -110,6 +113,15 @@ class RegisterView(APIView):
                 httponly=True,
                 secure=True,
                 samesite="None",
+                max_age=refresh.lifetime if remember_me else None,
+            )
+
+            response.set_cookie(
+                key="remember_me",
+                value=str(remember_me),
+                secure=True,
+                samesite="None",
+                max_age=refresh.lifetime if remember_me else None,
             )
 
             return response
@@ -134,6 +146,7 @@ class LogoutView(APIView):
         )
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
+        response.delete_cookie("remember_me")
 
         return response
 

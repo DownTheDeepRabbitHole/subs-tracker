@@ -12,7 +12,7 @@ const form = reactive({
 })
 
 const handleSubmit = () => {
-  register(form.username, form.password)
+  register(form.username, form.password, form.rememberMe)
 }
 </script>
 

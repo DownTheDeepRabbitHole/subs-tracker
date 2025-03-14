@@ -31,6 +31,7 @@ const rememberMe = ref(true)
             v-model="username"
             placeholder="Enter your username"
             fluid
+            required
           />
         </div>
 
@@ -47,8 +48,9 @@ const rememberMe = ref(true)
             placeholder="Enter your password"
             type="password"
             :feedback="false"
-            ToggleMask
+            toggleMask
             fluid
+            required
           />
         </div>
 

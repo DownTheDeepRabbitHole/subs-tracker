@@ -10,7 +10,7 @@ export function useHelpers() {
 
   const handleError = (message, error) => {
     console.error(message, error)
-    showToast('error', 'Error', error.response?.data?.error || message)
+    showToast('error', 'Error', error.response?.data || message)
   }
 
   const formatDate = (date) => {
