@@ -5,7 +5,7 @@ Substracker is a website to manage and track your subscriptions.
 **Warning:** the full development project (including libraries) exceeds 300MB. It's recommended to run the production version if memory is a concern.
 
 **Prerequisites:**
-- A supported version of python (install [here](https://www.python.org/downloads/))
+- Python (install [here](https://www.python.org/downloads/))
 - Node.js (install [here](https://nodejs.org/en/download))
 - pip package manager (should be installed with python)
 
