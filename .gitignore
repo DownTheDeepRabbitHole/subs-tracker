@@ -62,6 +62,8 @@ docs/_build/
 *.pyc
 __pycache__/
 __pycache__
+migrations/
+backend/api/migrations/
 /pycache/*
 local_settings.py
 media
