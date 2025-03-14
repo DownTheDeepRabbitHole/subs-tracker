@@ -39,13 +39,13 @@ class LoginView(APIView):
 
     def post(self, request):
         serializer = LoginUserSerializer(data=request.data)
-        remember_me = request.data.get('remember_me', False)
+        remember_me = request.data.get("remember_me", False)
 
         if serializer.is_valid():
             user = serializer.validated_data
-            refresh = RefreshToken.for_user(user)
 
-            access_token = str(refresh.access_token)
+            refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
 
             response = Response(
                 {"user": UserProfileSerializer(user).data}, status=status.HTTP_200_OK
@@ -53,10 +53,11 @@ class LoginView(APIView):
 
             response.set_cookie(
                 key="access_token",
-                value=access_token,
+                value=str(access),
                 httponly=True,
                 secure=True,
                 samesite="None",
+                max_age=access.lifetime if remember_me else None,
             )
 
             response.set_cookie(
@@ -65,6 +66,15 @@ class LoginView(APIView):
                 httponly=True,
                 secure=True,
                 samesite="None",
+                max_age=refresh.lifetime if remember_me else None,
+            )
+
+            response.set_cookie(
+                key="remember_me",
+                value=str(remember_me),
+                secure=True,
+                samesite="None",
+                max_age=refresh.lifetime if remember_me else None,
             )
 
             return response

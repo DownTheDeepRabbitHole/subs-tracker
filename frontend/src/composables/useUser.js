@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, watch, watchEffect } from 'vue'
 import axios from 'axios'
 import router from '@/router'
 
@@ -59,7 +59,7 @@ export function useUser() {
 
   const login = async (username, password, rememberMe) => {
     try {
-      await axios.post('/api/auth/login/', { username, password })
+      await axios.post('/api/auth/login/', { username, password, remember_me: rememberMe })
       await fetchUserProfile()
       await registerOneSignal(userStore.profile.id)
       router.push('/')
@@ -70,7 +70,7 @@ export function useUser() {
 
   const register = async (username, password, rememberMe) => {
     try {
-      await axios.post('/api/auth/register/', { username, password })
+      await axios.post('/api/auth/register/', { username, password, remember_me: rememberMe })
       await fetchUserProfile()
       await registerOneSignal(userStore.profile.id)
       showToast('success', 'Success', 'Registered successfully!')
@@ -90,6 +90,12 @@ export function useUser() {
       handleError('Failed to log out.', error)
     }
   }
+
+  watchEffect(() => {
+    if (userStore.loggedIn) {
+      fetchUserProfile()
+    }
+  })
 
   return {
     userStore,

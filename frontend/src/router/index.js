@@ -20,13 +20,14 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAuth) {
       try {
         const response = await axios.post('/api/auth/verify/') // Verify user's session (access token)
-        if (response.status === 200) { // Valid session, proceed to requested route
+        if (response.status === 200) {
+          // Valid session, proceed to requested route
           userStore.login()
           return next()
         }
       } catch (error) {
         userStore.logout()
-        return next('/login') 
+        return next('/login')
       }
     }
   }

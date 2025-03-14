@@ -7,44 +7,45 @@ class TokenRefreshMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        response = self.get_response(request)
+
         # Retrieve the access token from the HTTPOnly cookie
         access_token = request.COOKIES.get("access_token")
+        refresh_token = request.COOKIES.get("refresh_token")
+        remember_me = request.COOKIES.get("remember_me") == "True"
 
-        if access_token:
-            try:
-                access = AccessToken(access_token)
+        if not (remember_me and access_token and refresh_token):
+            return response
 
-                # Check if the access token is about to expire
-                if datetime.now() > datetime.fromtimestamp(access["exp"]) - timedelta(
-                    minutes=10
-                ):
-                    # About to expire: attempt a refresh
-                    refresh_token = request.COOKIES.get("refresh_token")
+        try:
+            # Parse the access token and check expiration
+            access = AccessToken(access_token)
+            token_expiry = datetime.fromtimestamp(access["exp"])
 
-                    if refresh_token:
-                        refresh = RefreshToken(refresh_token)
-                        new_access_token = str(refresh.access_token)
+            # Check if token is about to expire
+            if datetime.now() > token_expiry - timedelta(minutes=10):
+                # Refresh the token
+                refresh = RefreshToken(refresh_token)
+                new_access = refresh.access_token
 
-                        # Proceeds with the rest of the response
-                        response = self.get_response(request)
+                response.set_cookie(
+                    key="access_token",
+                    value=str(new_access),
+                    httponly=True,
+                    secure=True,
+                    samesite="None",
+                    max_age=new_access.lifetime,
+                )
 
-                        response.set_cookie(
-                            key="access_token",
-                            value=new_access_token,
-                            httponly=True,
-                            secure=True,
-                            samesite="None",
-                        )
+                response.set_cookie(
+                    key="refresh_token",
+                    value=str(refresh),
+                    httponly=True,
+                    secure=True,
+                    samesite="None",
+                    max_age=refresh.lifetime,
+                )
+        except Exception as e:
+            pass
 
-                        response.set_cookie(
-                            key="refresh_token",
-                            value=str(refresh),
-                            httponly=True,
-                            secure=True,
-                            samesite="None",
-                        )
-                        return response
-            except Exception as e:
-                pass  # Graceful handling of invalid/expired tokens
-
-        return self.get_response(request)
+        return response
