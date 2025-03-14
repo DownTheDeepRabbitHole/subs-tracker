@@ -41,12 +41,6 @@ const routes = [
         meta: { title: 'Edit User Plan' },
       },
       {
-        path: 'test',
-        name: 'test',
-        component: () => import('@/views/TestView.vue'),
-        meta: { title: 'Test' },
-      },
-      {
         path: 'profile',
         name: 'profile',
         component: () => import('@/views/ProfileView.vue'),
