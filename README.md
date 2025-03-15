@@ -1,5 +1,5 @@
 # Substracker
-Choose subscriptions from a shared list or create custom subscriptions with your own
+Subs-tracker is an all-in-one website used to manage and track all your subscriptions. Choose subscriptions from a shared list or create custom subscriptions with your own
 information. Recieve notifications for upcoming payments, and integrate with
 RescueTime's screentime tracker to be notified of unused payments.
 
