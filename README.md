@@ -1,5 +1,7 @@
 # Substracker
-Substracker is a website to manage and track your subscriptions.
+Choose subscriptions from a shared list or create custom subscriptions with your own
+information. Recieve notifications for upcoming payments, and integrate with
+RescueTime's screentime tracker to be notified of unused payments.
 
 ## Installation
 **Warning:** the full development project (including libraries) exceeds 300MB. It's recommended to run the production version if memory is a concern.
