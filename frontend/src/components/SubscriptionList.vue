@@ -110,7 +110,7 @@ onMounted(() => {
     <template #header>
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
         <div class="flex items-center gap-4">
-          <Button label="Add Plan" icon="pi pi-plus" @click="$router.push('/new-plan')" />
+          <Button label="Add Plan" icon="pi pi-plus" @click="$router.push('/add-plan')" />
           <Select
             v-model="sortKey"
             :options="sortOptions"

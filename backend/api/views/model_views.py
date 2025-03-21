@@ -107,7 +107,6 @@ class UserPlanView(viewsets.ModelViewSet):
         return params
 
     def _build_filters(self, params, today):
-        # source: https://stackoverflow.com/questions/4523530/q-objects-and-the-operator-in-django
         filters = Q()
 
         if category_id := params.get("category_id"):
